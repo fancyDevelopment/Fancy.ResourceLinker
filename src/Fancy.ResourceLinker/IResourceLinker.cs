@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Fancy.ResourceLinker.Models;
+using Microsoft.AspNet.Mvc;
 
 namespace Fancy.ResourceLinker
 {
@@ -13,13 +14,15 @@ namespace Fancy.ResourceLinker
         /// </summary>
         /// <typeparam name="TResource">The type of resource to add links to.</typeparam>
         /// <param name="resource">The resource to add links to.</param>
-        void AddLinks<TResource>(TResource resource) where TResource : ResourceBase;
+        /// <param name="urlHelper">The URL helper.</param>
+        void AddLinks<TResource>(TResource resource, IUrlHelper urlHelper) where TResource : ResourceBase;
 
         /// <summary>
         /// Adds links to a collection of resources using a link strategy.
         /// </summary>
         /// <typeparam name="TResource">The type of resource to add links to.</typeparam>
         /// <param name="resources">The resources to add links to.</param>
-        void AddLinks<TResource>(IEnumerable<TResource> resources) where TResource : ResourceBase;
+        /// <param name="urlHelper">The URL helper.</param>
+        void AddLinks<TResource>(IEnumerable<TResource> resources, IUrlHelper urlHelper) where TResource : ResourceBase;
     }
 }

@@ -25,7 +25,7 @@ namespace Fancy.ResourceLinker
                 throw new InvalidOperationException("No resource linker was found in the ioc container. Register a class implementing the IResourceLinker interface into the ioc container.");    
             }
 
-            resourceLinker.AddLinks(resource);
+            resourceLinker.AddLinks(resource, controller.Url);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Fancy.ResourceLinker
                 throw new InvalidOperationException("No resource linker was found in the ioc container. Register a class implementing the IResourceLinker interface into the ioc container.");
             }
 
-            resourceLinker.AddLinks(resources);
+            resourceLinker.AddLinks(resources, controller.Url);
         }
     }
 }
