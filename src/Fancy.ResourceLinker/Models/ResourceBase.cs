@@ -18,14 +18,6 @@ namespace Fancy.ResourceLinker.Models
         }
 
         /// <summary>
-        /// Gets or sets the identifier.
-        /// </summary>
-        /// <value>
-        /// The identifier.
-        /// </value>
-        public int Id { get; set; }
-
-        /// <summary>
         /// Adds the link.
         /// </summary>
         /// <param name="rel">The rel.</param>
