@@ -51,7 +51,7 @@ namespace Fancy.ResourceLinker
                     // Type is a resource -> cast the object of the property and link it
                     AddLinks((ResourceBase)propertyValue, urlHelper);
                 }
-                else if (propertyInfo.PropertyType.GetTypeInfo().IsSubclassOf(typeof(IEnumerable<ResourceBase>)))
+                else if (propertyValue is IEnumerable<ResourceBase>)
                 {
                     // Type is a collection of resources -> cast object and link it
                     IEnumerable<ResourceBase> subResources = propertyValue as IEnumerable<ResourceBase>;
