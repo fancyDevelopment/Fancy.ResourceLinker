@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Fancy.ResourceLinker.Models;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Fancy.ResourceLinker
 {

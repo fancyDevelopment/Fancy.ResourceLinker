@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Fancy.ResourceLinker.Models;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Fancy.ResourceLinker
 {
@@ -18,7 +18,7 @@ namespace Fancy.ResourceLinker
         /// <param name="resource">The resource to link.</param>
         public static void LinkResource<TResource>(this Controller controller, TResource resource) where TResource : ResourceBase
         {
-            IResourceLinker resourceLinker = controller.HttpContext.ApplicationServices.GetService(typeof (IResourceLinker)) as IResourceLinker;
+            IResourceLinker resourceLinker = controller.HttpContext.RequestServices.GetService(typeof (IResourceLinker)) as IResourceLinker;
 
             if (resourceLinker == null)
             {
@@ -36,7 +36,7 @@ namespace Fancy.ResourceLinker
         /// <param name="resources">The resources to link.</param>
         public static void LinkResources<TResource>(this Controller controller, IEnumerable<TResource> resources) where TResource : ResourceBase
         {
-            IResourceLinker resourceLinker = controller.HttpContext.ApplicationServices.GetService(typeof(IResourceLinker)) as IResourceLinker;
+            IResourceLinker resourceLinker = controller.HttpContext.RequestServices.GetService(typeof(IResourceLinker)) as IResourceLinker;
 
             if (resourceLinker == null)
             {

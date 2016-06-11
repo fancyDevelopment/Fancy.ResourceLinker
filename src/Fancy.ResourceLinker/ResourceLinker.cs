@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Fancy.ResourceLinker.Models;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
 namespace Fancy.ResourceLinker

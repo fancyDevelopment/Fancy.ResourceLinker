@@ -1,28 +1,23 @@
 ﻿{
-  "version": "1.0.0-*",
+  "version": "0.0.1",
   "description": "Fancy.ResourceLinker Class Library",
-  "authors": [ "dmurrmann" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "authors": [ "fancy development - Daniel Murrmann" ],
 
+  "packOptions": {
+    "tags": [ "" ],
+    "projectUrl": "https://github.com/fancyDevelopment/Fancy.ResourceLinker",
+    "licenseUrl": ""
+  },
+  
   "dependencies": {
-    "Newtonsoft.Json": "7.0.1",
-    "Microsoft.AspNet.Mvc": "6.0.0-rc1-final"
+    "NETStandard.Library": "1.5.0-rc2-24027",
+    "Newtonsoft.Json": "9.0.1-beta1",
+    "Microsoft.AspNetCore.Mvc": "1.0.0-rc2-final"
   },
 
   "frameworks": {
-    "net451": { },
-    "dotnet5.4": {
-      "dependencies": {
-        "Microsoft.CSharp": "4.0.1-beta-23516",
-        "System.Collections": "4.0.11-beta-23516",
-        "System.Linq": "4.0.1-beta-23516",
-        "System.Runtime": "4.0.21-beta-23516",
-        "System.Threading": "4.0.11-beta-23516"
-      }
-    },
-    "dnx451": { },
-    "dnxcore50": {}
+    "netstandard1.5": {
+      "imports": "dnxcore50"
+    }
   }
 }
