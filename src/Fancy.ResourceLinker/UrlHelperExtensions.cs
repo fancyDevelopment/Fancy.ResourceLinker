@@ -4,6 +4,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Routing;
 
 namespace Fancy.ResourceLinker
 {
@@ -41,9 +43,16 @@ namespace Fancy.ResourceLinker
                 .Select(p => GetParameterValue(methodCallExpression, p))
                 .ToDictionary(p => p.Item1, p => p.Item2);
 
-            // Read the route attribute
-            RouteAttribute routeAttribute = methodCallExpression.Method.GetCustomAttributes<RouteAttribute>().SingleOrDefault();
+            // Try to read the route attribute from the method
+            RouteAttribute routeAttribute = methodCallExpression.Method.GetCustomAttribute<RouteAttribute>();
 
+            if(routeAttribute == null)
+            {
+                // Try to read the route attribute from the type
+                routeAttribute = methodCallExpression.Method.DeclaringType.GetTypeInfo().GetCustomAttribute<RouteAttribute>();
+            }
+
+            // If no route was found use the default route
             string routeName = routeAttribute != null ? routeAttribute.Name : "DefaultApi";
 
             if (string.IsNullOrEmpty(routeName))
