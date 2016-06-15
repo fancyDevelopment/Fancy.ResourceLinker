@@ -55,6 +55,19 @@ namespace Fancy.ResourceLinker
             // If no route was found use the default route
             string routeName = routeAttribute != null ? routeAttribute.Name : "DefaultApi";
 
+            var router = urlHelper.ActionContext.RouteData.Routers[0];
+
+            RouteValueDictionary valueDictionary = new RouteValueDictionary();
+            
+            foreach(var routeValue in routeValues)
+            {
+                valueDictionary.Add(routeValue.Key, routeValue.Value);
+            }
+
+            VirtualPathContext vpc = new VirtualPathContext(urlHelper.ActionContext.HttpContext, urlHelper.ActionContext.RouteData.Values, valueDictionary);
+
+            var result = router.GetVirtualPath(vpc);
+
             if (string.IsNullOrEmpty(routeName))
             {
                 throw new InvalidOperationException("The name property of the Route attribute needs to be set to use the attribute route for linking");
