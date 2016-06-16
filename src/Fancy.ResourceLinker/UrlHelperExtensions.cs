@@ -4,8 +4,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Routing;
 
 namespace Fancy.ResourceLinker
 {
@@ -43,31 +41,9 @@ namespace Fancy.ResourceLinker
                 .Select(p => GetParameterValue(methodCallExpression, p))
                 .ToDictionary(p => p.Item1, p => p.Item2);
 
-            // Try to read the route attribute from the method
-            RouteAttribute routeAttribute = methodCallExpression.Method.GetCustomAttribute<RouteAttribute>();
+            string routeName = FindRouteNameForMethod(methodCallExpression.Method);
 
-            if(routeAttribute == null)
-            {
-                // Try to read the route attribute from the type
-                routeAttribute = methodCallExpression.Method.DeclaringType.GetTypeInfo().GetCustomAttribute<RouteAttribute>();
-            }
-
-            // If no route was found use the default route
-            string routeName = routeAttribute != null ? routeAttribute.Name : "DefaultApi";
-
-            var router = urlHelper.ActionContext.RouteData.Routers[0];
-
-            RouteValueDictionary valueDictionary = new RouteValueDictionary();
-            
-            foreach(var routeValue in routeValues)
-            {
-                valueDictionary.Add(routeValue.Key, routeValue.Value);
-            }
-
-            VirtualPathContext vpc = new VirtualPathContext(urlHelper.ActionContext.HttpContext, urlHelper.ActionContext.RouteData.Values, valueDictionary);
-
-            var result = router.GetVirtualPath(vpc);
-
+            // A route name is mandatory to create a link to
             if (string.IsNullOrEmpty(routeName))
             {
                 throw new InvalidOperationException("The name property of the Route attribute needs to be set to use the attribute route for linking");
@@ -91,6 +67,56 @@ namespace Fancy.ResourceLinker
             object value = lambda.Compile().DynamicInvoke();
 
             return new Tuple<string, object>(parameterInfo.Name, value);
+        }
+
+        private static string FindRouteNameForMethod(MethodInfo controllerMethod)
+        {
+            // First try to find a http verb attribute on the method
+            HttpGetAttribute httpGetAttribute = controllerMethod.GetCustomAttribute<HttpGetAttribute>();
+
+            if(httpGetAttribute?.Name != null)
+            {
+                return httpGetAttribute.Name;
+            }
+
+            HttpPutAttribute httpPutAttribute = controllerMethod.GetCustomAttribute<HttpPutAttribute>();
+
+            if (httpPutAttribute?.Name != null)
+            {
+                return httpPutAttribute.Name;
+            }
+
+            HttpPostAttribute httpPostAttribute = controllerMethod.GetCustomAttribute<HttpPostAttribute>();
+
+            if (httpPostAttribute?.Name != null)
+            {
+                return httpPostAttribute.Name;
+            }
+
+            HttpDeleteAttribute httpDeleteAttribute = controllerMethod.GetCustomAttribute<HttpDeleteAttribute>();
+
+            if (httpDeleteAttribute?.Name != null)
+            {
+                return httpDeleteAttribute.Name;
+            }
+
+            // If no http verb attribute was found try to find a route attribute on the method or controller
+            RouteAttribute routeAttribute = controllerMethod.GetCustomAttribute<RouteAttribute>();
+
+            if (routeAttribute?.Name != null)
+            {
+                return routeAttribute.Name;
+            }
+
+            routeAttribute = controllerMethod.DeclaringType.GetTypeInfo().GetCustomAttribute<RouteAttribute>();
+
+            if (routeAttribute?.Name != null)
+            {
+                return routeAttribute.Name;
+            }
+
+            // No route name could be found -> return null
+            return null;
         }
     }
 }
