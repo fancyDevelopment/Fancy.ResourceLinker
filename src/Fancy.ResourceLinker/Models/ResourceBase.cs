@@ -24,7 +24,7 @@ namespace Fancy.ResourceLinker.Models
         /// <param name="href">The href.</param>
         public void AddLink(string rel, string href)
         {
-            Links.Add(rel, new ResourceLink(rel, href));
+            Links.Add(rel, new ResourceLink(href));
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Fancy.ResourceLinker.Models
         /// <param name="href">The URL to the action.</param>
         public void AddAction(string rel, string method, string href)
         {
-            Actions.Add(rel, new ResourceAction(rel, method, href));
+            Actions.Add(rel, new ResourceAction(method, href));
         }
 
         /// <summary>

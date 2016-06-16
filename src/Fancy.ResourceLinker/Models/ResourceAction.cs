@@ -10,24 +10,13 @@ namespace Fancy.ResourceLinker.Models
         /// <summary>
         /// Initializes a new instance of the <see cref="ResourceAction" /> class.
         /// </summary>
-        /// <param name="rel">The relative.</param>
         /// <param name="method">The method.</param>
         /// <param name="href">The href.</param>
-        public ResourceAction(string rel, string method, string href)
+        public ResourceAction(string method, string href)
         {
-            Rel = rel;
             Method = method;
             Href = href;
         }
-
-        /// <summary>
-        /// Gets or sets the relation of the action.
-        /// </summary>
-        /// <value>
-        /// The relation.
-        /// </value>
-        [JsonProperty("rel")]
-        public string Rel { get; set; }
 
         /// <summary>
         /// Gets or sets the HTTP method to use for this action.
