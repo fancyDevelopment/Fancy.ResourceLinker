@@ -46,6 +46,11 @@ namespace Fancy.ResourceLinker
             {
                 object propertyValue = propertyInfo.GetValue(resource);
 
+                if (propertyValue == null)
+                {
+                    continue;
+                }
+
                 if (propertyInfo.PropertyType.GetTypeInfo().IsSubclassOf(typeof(ResourceBase)))
                 {
                     // Type is a resource -> cast the object of the property and link it
