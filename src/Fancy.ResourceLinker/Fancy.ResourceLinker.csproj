@@ -7,7 +7,7 @@
   <PropertyGroup>
     <Description>A library to create HATEOAS like links to resources published by ASP.NET Core</Description>
     <AssemblyTitle>Fancy.ResourceLinker</AssemblyTitle>
-    <VersionPrefix>0.0.1</VersionPrefix>
+    <VersionPrefix>0.0.2</VersionPrefix>
     <Authors>fancy development - Daniel Murrmann</Authors>
     <TargetFramework>netstandard1.6</TargetFramework>
     <AssemblyName>Fancy.ResourceLinker</AssemblyName>
