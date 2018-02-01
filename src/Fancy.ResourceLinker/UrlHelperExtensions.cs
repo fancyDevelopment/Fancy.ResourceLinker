@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Fancy.ResourceLinker
 {
@@ -26,6 +27,26 @@ namespace Fancy.ResourceLinker
 
             var methodCallExpression = methodExpression.Body as MethodCallExpression;
             return LinkTo(urlHelper, methodCallExpression);
+        }
+
+        /// <summary>
+        /// Helper method to create links to controller via linq expressions for async controller methods.
+        /// </summary>
+        /// <typeparam name="TController">The type of the controller.</typeparam>
+        /// <param name="urlHelper">The URL helper.</param>
+        /// <param name="methodExpression">The method expression.</param>
+        /// <returns>The constructed link.</returns>
+        public static string LinkTo<TController>(this IUrlHelper urlHelper, Expression<Func<TController, Task>> methodExpression) where TController : Controller
+        {
+            if (urlHelper == null) throw new ArgumentNullException(nameof(urlHelper));
+            if (methodExpression == null) throw new ArgumentNullException(nameof(methodExpression));
+
+            var methodCallExpression = methodExpression.Body as MethodCallExpression;
+            string link = LinkTo(urlHelper, methodCallExpression);
+
+            link = link.Replace("aerondo-appservices-pilots", "localhost:4100/api");
+
+            return link;
         }
 
         /// <summary>
