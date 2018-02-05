@@ -42,11 +42,7 @@ namespace Fancy.ResourceLinker
             if (methodExpression == null) throw new ArgumentNullException(nameof(methodExpression));
 
             var methodCallExpression = methodExpression.Body as MethodCallExpression;
-            string link = LinkTo(urlHelper, methodCallExpression);
-
-            link = link.Replace("aerondo-appservices-pilots", "localhost:4100/api");
-
-            return link;
+            return LinkTo(urlHelper, methodCallExpression);
         }
 
         /// <summary>
@@ -62,16 +58,22 @@ namespace Fancy.ResourceLinker
                 .Select(p => GetParameterValue(methodCallExpression, p))
                 .ToDictionary(p => p.Item1, p => p.Item2);
 
-            string routeName = FindRouteNameForMethod(methodCallExpression.Method);
+            string controller = methodCallExpression.Method.DeclaringType.Name.Replace("Controller", "");
+            string action = methodCallExpression.Method.Name;
 
-            // A route name is mandatory to create a link to
-            if (string.IsNullOrEmpty(routeName))
+            string actionUrl = urlHelper.Action(action, controller, routeValues);
+            string baseUrl;
+
+            if(urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("ResourceProxy"))
             {
-                throw new InvalidOperationException("The name property of the Route attribute needs to be set to use the attribute route for linking");
+                baseUrl = urlHelper.ActionContext.HttpContext.Request.Headers["ResourceProxy"];
+            }
+            else
+            {
+                baseUrl = urlHelper.ActionContext.HttpContext.Request.Scheme + "://" + urlHelper.ActionContext.HttpContext.Request.Host.Value;
             }
 
-            // Use the url helper to create a link
-            return urlHelper.Link(routeName, routeValues);
+            return CombineUri(baseUrl, actionUrl);
         }
 
         /// <summary>
@@ -90,54 +92,17 @@ namespace Fancy.ResourceLinker
             return new Tuple<string, object>(parameterInfo.Name, value);
         }
 
-        private static string FindRouteNameForMethod(MethodInfo controllerMethod)
+        /// <summary>
+        /// Combines a URI from two parts.
+        /// </summary>
+        /// <param name="uri1">The uri1.</param>
+        /// <param name="uri2">The uri2.</param>
+        /// <returns>The combined uri.</returns>
+        public static string CombineUri(string uri1, string uri2)
         {
-            // First try to find a http verb attribute on the method
-            HttpGetAttribute httpGetAttribute = controllerMethod.GetCustomAttribute<HttpGetAttribute>();
-
-            if(httpGetAttribute?.Name != null)
-            {
-                return httpGetAttribute.Name;
-            }
-
-            HttpPutAttribute httpPutAttribute = controllerMethod.GetCustomAttribute<HttpPutAttribute>();
-
-            if (httpPutAttribute?.Name != null)
-            {
-                return httpPutAttribute.Name;
-            }
-
-            HttpPostAttribute httpPostAttribute = controllerMethod.GetCustomAttribute<HttpPostAttribute>();
-
-            if (httpPostAttribute?.Name != null)
-            {
-                return httpPostAttribute.Name;
-            }
-
-            HttpDeleteAttribute httpDeleteAttribute = controllerMethod.GetCustomAttribute<HttpDeleteAttribute>();
-
-            if (httpDeleteAttribute?.Name != null)
-            {
-                return httpDeleteAttribute.Name;
-            }
-
-            // If no http verb attribute was found try to find a route attribute on the method or controller
-            RouteAttribute routeAttribute = controllerMethod.GetCustomAttribute<RouteAttribute>();
-
-            if (routeAttribute?.Name != null)
-            {
-                return routeAttribute.Name;
-            }
-
-            routeAttribute = controllerMethod.DeclaringType.GetTypeInfo().GetCustomAttribute<RouteAttribute>();
-
-            if (routeAttribute?.Name != null)
-            {
-                return routeAttribute.Name;
-            }
-
-            // No route name could be found -> return null
-            return null;
+            uri1 = uri1.TrimEnd('/');
+            uri2 = uri2.TrimStart('/');
+            return string.Format("{0}/{1}", uri1, uri2);
         }
     }
 }
