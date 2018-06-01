@@ -10,11 +10,6 @@ namespace Fancy.ResourceLinker.Models
     public class ResourceBase : DynamicObject
     {
         /// <summary>
-        /// The dynamic properties of this resource.
-        /// </summary>
-        Dictionary<string, object> _dynamicProperties = new Dictionary<string, object>();
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ResourceBase"/> class.
         /// </summary>
         public ResourceBase()
@@ -22,6 +17,32 @@ namespace Fancy.ResourceLinker.Models
             Links = new Dictionary<string, ResourceLink>();
             Actions = new Dictionary<string, ResourceAction>();
         }
+
+        /// <summary>
+        /// Gets or sets the links of this resource.
+        /// </summary>
+        /// <value>
+        /// The links.
+        /// </value>
+        [JsonProperty("_links")]
+        public Dictionary<string, ResourceLink> Links { get; }
+
+        /// <summary>
+        /// Gets or sets the actions of this resource.
+        /// </summary>
+        /// <value>
+        /// The actions.
+        /// </value>
+        [JsonProperty("_actions")]
+        public Dictionary<string, ResourceAction> Actions { get; }
+
+        /// <summary>
+        /// Gets the dynamic properties.
+        /// </summary>
+        /// <value>
+        /// The dynamic properties.
+        /// </value>
+        internal Dictionary<string, object> DynamicProperties { get; } = new Dictionary<string, object>();
 
         /// <summary>
         /// Adds the link.
@@ -45,24 +66,6 @@ namespace Fancy.ResourceLinker.Models
         }
 
         /// <summary>
-        /// Gets or sets the links of this resource.
-        /// </summary>
-        /// <value>
-        /// The links.
-        /// </value>
-        [JsonProperty("_links")]
-        public Dictionary<string, ResourceLink> Links { get; }
-
-        /// <summary>
-        /// Gets or sets the actions of this resource.
-        /// </summary>
-        /// <value>
-        /// The actions.
-        /// </value>
-        [JsonProperty("_actions")]
-        public Dictionary<string, ResourceAction> Actions { get; }
-
-        /// <summary>
         /// Tries to get a dynamic member.
         /// </summary>
         /// <param name="binder">The binder.</param>
@@ -70,9 +73,9 @@ namespace Fancy.ResourceLinker.Models
         /// <returns>true if the member could be retrieved; otherwise, false.</returns>
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            if (_dynamicProperties.ContainsKey(binder.Name))
+            if (DynamicProperties.ContainsKey(binder.Name))
             {
-                result = _dynamicProperties[binder.Name];
+                result = DynamicProperties[binder.Name];
                 return true;
             }
 
@@ -90,7 +93,7 @@ namespace Fancy.ResourceLinker.Models
         /// </returns>
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
-            _dynamicProperties[binder.Name] = value;
+            DynamicProperties[binder.Name] = value;
             return true;
         }
 
@@ -102,7 +105,7 @@ namespace Fancy.ResourceLinker.Models
         /// </returns>
         public override IEnumerable<string> GetDynamicMemberNames()
         {
-            return _dynamicProperties.Keys;
+            return DynamicProperties.Keys;
         }
     }
 }
