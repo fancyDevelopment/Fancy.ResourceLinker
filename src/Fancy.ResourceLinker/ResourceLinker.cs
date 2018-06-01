@@ -63,6 +63,27 @@ namespace Fancy.ResourceLinker
                     AddLinks(subResources, urlHelper);
                 }
             }
+
+            // Interate through all dynamic properties and link child objects which are also resources
+            foreach (object dynamicPropertyValue in resource.DynamicProperties.Values)
+            {
+                if (dynamicPropertyValue == null)
+                {
+                    continue;
+                }
+
+                if (dynamicPropertyValue.GetType().GetTypeInfo().IsSubclassOf(typeof(ResourceBase)))
+                {
+                    // Type is a resource -> cast the object of the property and link it
+                    AddLinks((ResourceBase)dynamicPropertyValue, urlHelper);
+                }
+                else if (dynamicPropertyValue is IEnumerable<ResourceBase>)
+                {
+                    // Type is a collection of resources -> cast object and link it
+                    IEnumerable<ResourceBase> subResources = dynamicPropertyValue as IEnumerable<ResourceBase>;
+                    AddLinks(subResources, urlHelper);
+                }
+            }
         }
 
         /// <summary>
