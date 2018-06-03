@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Fancy.ResourceLinker.Models
 {
@@ -25,7 +27,7 @@ namespace Fancy.ResourceLinker.Models
         /// The links.
         /// </value>
         [JsonProperty("_links")]
-        public Dictionary<string, ResourceLink> Links { get; }
+        public Dictionary<string, ResourceLink> Links { get; private set; }
 
         /// <summary>
         /// Gets or sets the actions of this resource.
@@ -34,7 +36,7 @@ namespace Fancy.ResourceLinker.Models
         /// The actions.
         /// </value>
         [JsonProperty("_actions")]
-        public Dictionary<string, ResourceAction> Actions { get; }
+        public Dictionary<string, ResourceAction> Actions { get; private set; }
 
         /// <summary>
         /// Gets the dynamic properties.
@@ -93,6 +95,18 @@ namespace Fancy.ResourceLinker.Models
         /// </returns>
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
+            if(binder.Name == "_links")
+            {
+                Links = ((JObject) value).ToObject<Dictionary<string, ResourceLink>>();
+                return true;
+            }
+
+            if (binder.Name == "_actions")
+            {
+                Actions = ((JObject)value).ToObject<Dictionary<string, ResourceAction>>();
+                return true;
+            }
+
             DynamicProperties[binder.Name] = value;
             return true;
         }
