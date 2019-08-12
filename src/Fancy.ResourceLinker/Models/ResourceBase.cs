@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -39,6 +38,15 @@ namespace Fancy.ResourceLinker.Models
         public Dictionary<string, ResourceAction> Actions { get; private set; }
 
         /// <summary>
+        /// Gets the hubs.
+        /// </summary>
+        /// <value>
+        /// The hubs.
+        /// </value>
+        [JsonProperty("_hubs")]
+        public Dictionary<string, ResourceHub> Hubs { get; private set; }
+
+        /// <summary>
         /// Gets the dynamic properties.
         /// </summary>
         /// <value>
@@ -65,6 +73,17 @@ namespace Fancy.ResourceLinker.Models
         public void AddAction(string rel, string method, string href)
         {
             Actions.Add(rel, new ResourceAction(method, href));
+        }
+
+        /// <summary>
+        /// Adds the hub.
+        /// </summary>
+        /// <param name="rel">The relative.</param>
+        /// <param name="hubUrl">The hub URL.</param>
+        /// <param name="token">The token.</param>
+        public void AddHub(string rel, string hubUrl, string token)
+        {
+            Hubs.Add(rel, new ResourceHub(hubUrl, token));
         }
 
         /// <summary>
@@ -104,6 +123,12 @@ namespace Fancy.ResourceLinker.Models
             if (binder.Name == "_actions")
             {
                 Actions = ((JObject)value).ToObject<Dictionary<string, ResourceAction>>();
+                return true;
+            }
+
+            if (binder.Name == "_hubs")
+            {
+                Hubs = ((JObject)value).ToObject<Dictionary<string, ResourceHub>>();
                 return true;
             }
 
