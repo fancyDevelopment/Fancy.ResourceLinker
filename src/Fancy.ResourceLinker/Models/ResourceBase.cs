@@ -17,6 +17,7 @@ namespace Fancy.ResourceLinker.Models
         {
             Links = new Dictionary<string, ResourceLink>();
             Actions = new Dictionary<string, ResourceAction>();
+            Hubs = new Dictionary<string, ResourceHub>();
         }
 
         /// <summary>
