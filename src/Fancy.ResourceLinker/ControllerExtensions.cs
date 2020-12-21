@@ -16,7 +16,7 @@ namespace Fancy.ResourceLinker
         /// <typeparam name="TResource">The type of resource to link.</typeparam>
         /// <param name="controller">The controller responding to a http call.</param>
         /// <param name="resource">The resource to link.</param>
-        public static void LinkResource<TResource>(this Controller controller, TResource resource) where TResource : ResourceBase
+        public static void LinkResource<TResource>(this ControllerBase controller, TResource resource) where TResource : ResourceBase
         {
             IResourceLinker resourceLinker = controller.HttpContext.RequestServices.GetService(typeof (IResourceLinker)) as IResourceLinker;
 
@@ -34,7 +34,7 @@ namespace Fancy.ResourceLinker
         /// <typeparam name="TResource">The type of resource to link.</typeparam>
         /// <param name="controller">The controller responding to a http call.</param>
         /// <param name="resources">The resources to link.</param>
-        public static void LinkResources<TResource>(this Controller controller, IEnumerable<TResource> resources) where TResource : ResourceBase
+        public static void LinkResources<TResource>(this ControllerBase controller, IEnumerable<TResource> resources) where TResource : ResourceBase
         {
             IResourceLinker resourceLinker = controller.HttpContext.RequestServices.GetService(typeof(IResourceLinker)) as IResourceLinker;
 
