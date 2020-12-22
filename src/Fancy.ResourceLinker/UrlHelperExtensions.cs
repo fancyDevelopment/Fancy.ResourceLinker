@@ -20,7 +20,7 @@ namespace Fancy.ResourceLinker
         /// <param name="urlHelper">The URL helper.</param>
         /// <param name="methodExpression">The method expression.</param>
         /// <returns>The constructed link.</returns>
-        public static string LinkTo<TController>(this IUrlHelper urlHelper, Expression<Action<TController>> methodExpression) where TController : Controller
+        public static string LinkTo<TController>(this IUrlHelper urlHelper, Expression<Action<TController>> methodExpression) where TController : ControllerBase
         {
             if (urlHelper == null) throw new ArgumentNullException(nameof(urlHelper));
             if (methodExpression == null) throw new ArgumentNullException(nameof(methodExpression));
@@ -36,7 +36,7 @@ namespace Fancy.ResourceLinker
         /// <param name="urlHelper">The URL helper.</param>
         /// <param name="methodExpression">The method expression.</param>
         /// <returns>The constructed link.</returns>
-        public static string LinkTo<TController>(this IUrlHelper urlHelper, Expression<Func<TController, Task>> methodExpression) where TController : Controller
+        public static string LinkTo<TController>(this IUrlHelper urlHelper, Expression<Func<TController, Task>> methodExpression) where TController : ControllerBase
         {
             if (urlHelper == null) throw new ArgumentNullException(nameof(urlHelper));
             if (methodExpression == null) throw new ArgumentNullException(nameof(methodExpression));

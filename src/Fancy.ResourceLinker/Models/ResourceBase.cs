@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
+using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -17,7 +19,7 @@ namespace Fancy.ResourceLinker.Models
         {
             Links = new Dictionary<string, ResourceLink>();
             Actions = new Dictionary<string, ResourceAction>();
-            Hubs = new Dictionary<string, ResourceHub>();
+            Sockets = new Dictionary<string, ResourcSocket>();
         }
 
         /// <summary>
@@ -27,6 +29,8 @@ namespace Fancy.ResourceLinker.Models
         /// The links.
         /// </value>
         [JsonProperty("_links")]
+        [JsonPropertyName("_links")]
+        [NotMapped]
         public Dictionary<string, ResourceLink> Links { get; private set; }
 
         /// <summary>
@@ -36,16 +40,20 @@ namespace Fancy.ResourceLinker.Models
         /// The actions.
         /// </value>
         [JsonProperty("_actions")]
+        [JsonPropertyName("_actions")]
+        [NotMapped]
         public Dictionary<string, ResourceAction> Actions { get; private set; }
 
         /// <summary>
-        /// Gets the hubs.
+        /// Gets the sockets.
         /// </summary>
         /// <value>
-        /// The hubs.
+        /// The sockets.
         /// </value>
-        [JsonProperty("_hubs")]
-        public Dictionary<string, ResourceHub> Hubs { get; private set; }
+        [JsonProperty("_sockets")]
+        [JsonPropertyName("_sockets")]
+        [NotMapped]
+        public Dictionary<string, ResourcSocket> Sockets { get; private set; }
 
         /// <summary>
         /// Gets the dynamic properties.
@@ -53,6 +61,7 @@ namespace Fancy.ResourceLinker.Models
         /// <value>
         /// The dynamic properties.
         /// </value>
+        [NotMapped]
         internal Dictionary<string, object> DynamicProperties { get; } = new Dictionary<string, object>();
 
         /// <summary>
@@ -80,11 +89,19 @@ namespace Fancy.ResourceLinker.Models
         /// Adds the hub.
         /// </summary>
         /// <param name="rel">The relative.</param>
-        /// <param name="hubUrl">The hub URL.</param>
+        /// <param name="href">The href.</param>
+        /// <param name="method">The method.</param>
         /// <param name="token">The token.</param>
-        public void AddHub(string rel, string hubUrl, string token)
+        public void AddSocket(string rel, string href, string method, string token)
         {
-            Hubs.Add(rel, new ResourceHub(hubUrl, token));
+            Sockets.Add(rel, new ResourcSocket(href, method, token));
+        }
+
+        public void RemoveMetadata()
+        {
+            Links = null;
+            Actions = null;
+            Sockets = null;
         }
 
         /// <summary>
@@ -127,9 +144,9 @@ namespace Fancy.ResourceLinker.Models
                 return true;
             }
 
-            if (binder.Name == "_hubs")
+            if (binder.Name == "_sockets")
             {
-                Hubs = ((JObject)value).ToObject<Dictionary<string, ResourceHub>>();
+                Sockets = ((JObject)value).ToObject<Dictionary<string, ResourcSocket>>();
                 return true;
             }
 
