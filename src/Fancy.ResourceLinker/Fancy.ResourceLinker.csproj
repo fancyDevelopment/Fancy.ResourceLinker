@@ -1,20 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>A library to create HATEOAS like links to resources published by ASP.NET Core</Description>
     <AssemblyTitle>Fancy.ResourceLinker</AssemblyTitle>
-    <VersionPrefix>0.0.7</VersionPrefix>
-    <Authors>fancy development - Daniel Murrmann</Authors>
+    <VersionPrefix>0.0.9</VersionPrefix>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Fancy.ResourceLinker</AssemblyName>
     <PackageId>Fancy.ResourceLinker</PackageId>
-    <PackageProjectUrl>https://github.com/fancyDevelopment/Fancy.ResourceLinker</PackageProjectUrl>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+  </PropertyGroup>
+
+  <!-- Package Metadata -->
+  <PropertyGroup>
+    <Title>Fancy Resource Linker</Title>
+    <Description>A library to create HATEOAS like links to resources published by ASP.NET Core</Description>
+    <Authors>fancy Development - Daniel Murrmann</Authors>
+    <Copyright>Copyright 2015-2020 fancyDevelopment - Daniel Murrmann</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/fancyDevelopment/Fancy.ResourceLinker</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
