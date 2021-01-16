@@ -41,8 +41,10 @@ namespace Fancy.ResourceLinker
 
             LinkObject(resource, urlHelper);
 
+            IEnumerable<PropertyInfo> propertyInfos = resource.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.GetIndexParameters().Length == 0);
+
             // Iterate through all properties and link child objects which are also resources
-            foreach (PropertyInfo propertyInfo in resource.GetType().GetProperties())
+            foreach (PropertyInfo propertyInfo in propertyInfos)
             {
                 object propertyValue = propertyInfo.GetValue(resource);
 
