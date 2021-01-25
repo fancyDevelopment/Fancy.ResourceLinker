@@ -13,6 +13,20 @@ namespace Fancy.ResourceLinker.Json
     public class ResourceJsonConverterFactory : JsonConverterFactory
     {
         /// <summary>
+        /// The write privates.
+        /// </summary>
+        private readonly bool _writePrivates;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResourceJsonConverterFactory"/> class.
+        /// </summary>
+        /// <param name="writePrivates">if set to <c>true</c> the convertes write private json fields.</param>
+        public ResourceJsonConverterFactory(bool writePrivates)
+        {
+            _writePrivates = writePrivates;
+        }
+
+        /// <summary>
         /// Determines whether the converter instance can convert the specified object type.
         /// </summary>
         /// <param name="typeToConvert">The type of the object to check whether it can be converted by this converter instance.</param>
@@ -38,7 +52,7 @@ namespace Fancy.ResourceLinker.Json
                 typeof(ResourceJsonConverter<>).MakeGenericType(new Type[] { typeToConvert }),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                args: new object[] { options },
+                args: new object[] { _writePrivates },
                 culture: null);
 
             return converter;

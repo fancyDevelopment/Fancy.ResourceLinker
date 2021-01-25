@@ -13,6 +13,20 @@ namespace Fancy.ResourceLinker.Json
     public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, new()
     {
         /// <summary>
+        /// The a flag to indicate weather the converter shall write json private fields.
+        /// </summary>
+        private readonly bool _writePrivates;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResourceJsonConverter{T}"/> class.
+        /// </summary>
+        /// <param name="writePrivates">if set to <c>true</c> [write privates].</param>
+        public ResourceJsonConverter(bool writePrivates)
+        {
+            _writePrivates = writePrivates;
+        }
+
+        /// <summary>
         /// Reads and converts the JSON to type <typeparamref name="T" />.
         /// </summary>
         /// <param name="reader">The reader.</param>
@@ -36,21 +50,24 @@ namespace Fancy.ResourceLinker.Json
 
             // Create the default result.
             var result = new T();
-            result.RemoveMetadata();
 
-            while (reader.TokenType != JsonTokenType.EndObject)
+            while (true)
             {
                 if (!reader.Read()) throw new JsonException("Incomplete or broken JSON object!");
 
+                if (reader.TokenType == JsonTokenType.EndObject) break;
+
                 // Read the next key
                 var key = reader.GetString();
-
-                // Do not deserialize private keys.
-                if (key.StartsWith("_")) continue;
+                key = key[0] == '_' ? key.Substring(1) : key;
+                key = char.ToUpper(key[0]) + key.Substring(1);
 
                 if (!reader.Read()) throw new JsonException("Incomplete or broken JSON object!");
 
-                object value;
+                // Do not deserialize private keys.
+                //if (key.StartsWith("_")) continue;
+
+                object value = null;
 
                 if (result.StaticKeys.Contains(key))
                 {
@@ -76,13 +93,18 @@ namespace Fancy.ResourceLinker.Json
                     {
                         value = true;
                     }
-                    else
+                    else if(reader.TokenType == JsonTokenType.StartObject)
                     {
-                        value = JsonSerializer.Deserialize<JsonElement>(ref reader);
+                        value = JsonSerializer.Deserialize<DynamicResource>(ref reader, options);
                     }
                 }
                  
                 result[key] = value;
+            }
+
+            if(!_writePrivates)
+            {
+                result.RemoveMetadata();
             }
 
             return result;
@@ -111,6 +133,9 @@ namespace Fancy.ResourceLinker.Json
                     string key = pair.Key;
                     key = char.ToLower(key[0]) + key.Substring(1);
                     if (key == "links" || key == "actions" || key == "sockets") key = "_" + key;
+
+                    if (key.StartsWith("_") && !_writePrivates) continue;
+
                     writer.WritePropertyName(key);
                     JsonSerializer.Serialize(writer, pair.Value, options);
                 }

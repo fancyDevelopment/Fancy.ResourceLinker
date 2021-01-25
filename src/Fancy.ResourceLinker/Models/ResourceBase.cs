@@ -328,4 +328,7 @@ namespace Fancy.ResourceLinker.Models
             return GetEnumerator();
         }
     }
+
+    public class DynamicResource : ResourceBase
+    { }
 }
