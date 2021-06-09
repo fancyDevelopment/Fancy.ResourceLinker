@@ -58,13 +58,31 @@ namespace Fancy.ResourceLinker
                 .Select(p => GetParameterValue(methodCallExpression, p))
                 .ToDictionary(p => p.Item1, p => p.Item2);
 
-            string controller = methodCallExpression.Method.DeclaringType.Name.Replace("Controller", "");
+            string controller = methodCallExpression.Method.DeclaringType.Name;
             string action = methodCallExpression.Method.Name;
 
-            string actionUrl = urlHelper.Action(action, controller, routeValues);
-            string baseUrl;
+            // Remove controller suffix
+            if (controller.EndsWith("Controller"))
+            {
+                controller = controller.Substring(0, "Controller".Length);
+            }
 
-            if(urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("ResourceProxy"))
+            // Remove action suffix
+            if(action.EndsWith("Async"))
+            {
+                action = action.Substring(0, "Async".Length);
+            }
+
+            // Retrieve url to action
+            string actionUrl = urlHelper.Action(action, controller, routeValues);
+
+            if(actionUrl == null)
+            {
+                throw new ArgumentException($"Could not find action with name '{action}' on controller '{controller}'");
+            }
+
+            string baseUrl;
+            if (urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("ResourceProxy"))
             {
                 baseUrl = urlHelper.ActionContext.HttpContext.Request.Headers["ResourceProxy"];
             }
