@@ -64,13 +64,13 @@ namespace Fancy.ResourceLinker
             // Remove controller suffix
             if (controller.EndsWith("Controller"))
             {
-                controller = controller.Substring(0, "Controller".Length);
+                controller = controller.Substring(0, controller.Length - "Controller".Length);
             }
 
             // Remove action suffix
             if(action.EndsWith("Async"))
             {
-                action = action.Substring(0, "Async".Length);
+                action = action.Substring(0, action.Length - "Async".Length);
             }
 
             // Retrieve url to action
