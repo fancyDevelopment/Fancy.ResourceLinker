@@ -59,13 +59,14 @@ namespace Fancy.ResourceLinker.Json
 
                 // Read the next key
                 var key = reader.GetString();
+
+                // If key is private field remove underscore
                 key = key[0] == '_' ? key.Substring(1) : key;
+
+                // Adjust case of first character to .NET standards
                 key = char.ToUpper(key[0]) + key.Substring(1);
 
                 if (!reader.Read()) throw new JsonException("Incomplete or broken JSON object!");
-
-                // Do not deserialize private keys.
-                //if (key.StartsWith("_")) continue;
 
                 object value = null;
 

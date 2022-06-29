@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26430.12
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker", "src\Fancy.ResourceLinker\Fancy.ResourceLinker.csproj", "{F08EAF2D-D2AA-4A7F-95BD-04F56FE5EE34}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker.IntegrationTests", "src\Fancy.ResourceLinker.IntegrationTests\Fancy.ResourceLinker.IntegrationTests.csproj", "{42E342E4-DA08-459D-B43D-FE7AE03549C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{F08EAF2D-D2AA-4A7F-95BD-04F56FE5EE34}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F08EAF2D-D2AA-4A7F-95BD-04F56FE5EE34}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F08EAF2D-D2AA-4A7F-95BD-04F56FE5EE34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {41D39620-DCF2-41E4-8FD1-336CC7031518}
 	EndGlobalSection
 EndGlobal
