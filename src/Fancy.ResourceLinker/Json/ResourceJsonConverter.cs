@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Models;
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -78,26 +79,7 @@ namespace Fancy.ResourceLinker.Json
                 else
                 {
                     // Read a dynamic key
-                    if(reader.TokenType == JsonTokenType.Number)
-                    {
-                        value = reader.GetDouble();
-                    }
-                    else if (reader.TokenType == JsonTokenType.String)
-                    {
-                        value = reader.GetString();
-                    }
-                    else if (reader.TokenType == JsonTokenType.False)
-                    {
-                        value = false;
-                    }
-                    else if (reader.TokenType == JsonTokenType.True)
-                    {
-                        value = true;
-                    }
-                    else if(reader.TokenType == JsonTokenType.StartObject)
-                    {
-                        value = JsonSerializer.Deserialize<DynamicResource>(ref reader, options);
-                    }
+                    value = ReadDynamicValue(ref reader, options);
                 }
                  
                 result[key] = value;
@@ -143,6 +125,44 @@ namespace Fancy.ResourceLinker.Json
 
                 writer.WriteEndObject();
             }
+        }
+
+        private object ReadDynamicValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        {
+            object value = null;
+
+            if (reader.TokenType == JsonTokenType.Number)
+            {
+                value = reader.GetDouble();
+            }
+            else if (reader.TokenType == JsonTokenType.String)
+            {
+                value = reader.GetString();
+            }
+            else if (reader.TokenType == JsonTokenType.False)
+            {
+                value = false;
+            }
+            else if (reader.TokenType == JsonTokenType.True)
+            {
+                value = true;
+            }
+            else if (reader.TokenType == JsonTokenType.StartObject)
+            {
+                value = JsonSerializer.Deserialize<DynamicResource>(ref reader, options);
+            }
+            else if(reader.TokenType == JsonTokenType.StartArray)
+            {
+                List<object> arrayValues = new List<object>();
+                while(reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.EndArray) break;
+                    arrayValues.Add(ReadDynamicValue(ref reader, options));
+                }
+                value = arrayValues;
+            }
+
+            return value;
         }
     }
 }
