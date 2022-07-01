@@ -127,6 +127,13 @@ namespace Fancy.ResourceLinker.Json
             }
         }
 
+        /// <summary>
+        /// Reads a dynamic value from the json reader. If it finds an object or an array the 
+        /// methods proceeds reading in a recursive manner. 
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The value.</returns>
         private object ReadDynamicValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             object value = null;
@@ -160,6 +167,9 @@ namespace Fancy.ResourceLinker.Json
                     arrayValues.Add(ReadDynamicValue(ref reader, options));
                 }
                 value = arrayValues;
+            } else if(reader.TokenType == JsonTokenType.Null)
+            {
+                value = null;
             }
 
             return value;
