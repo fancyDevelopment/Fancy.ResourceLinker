@@ -15,7 +15,6 @@ namespace Fancy.ResourceLinker
     /// </summary>
     public class ApiProxyController : HypermediaController
     {
-
         /// <summary>
         /// The HTTP client.
         /// </summary>
@@ -73,7 +72,7 @@ namespace Fancy.ResourceLinker
         /// <returns>The result deserialized into the specified resource type.</returns>
         protected Task<TResource> GetAsync<TResource>(string baseUriKey, string relativeUrl) where TResource : class
         {
-            Uri requestUri = new Uri(_baseUris[baseUriKey], relativeUrl);
+            Uri requestUri = CombineUris(_baseUris[baseUriKey].AbsoluteUri, relativeUrl);
             return GetAsync<TResource>(requestUri);
         }
 
@@ -98,7 +97,7 @@ namespace Fancy.ResourceLinker
 
             proxyRequest.Method = new HttpMethod(HttpContext.Request.Method);
 
-            Uri requestUri = new Uri(_baseUris[baseUriKey], relativeUrl);
+            Uri requestUri = CombineUris(_baseUris[baseUriKey].AbsoluteUri, relativeUrl);
 
             proxyRequest.Headers.Add("Accept", HttpContext.Request.Headers["Accept"].ToString());
             proxyRequest.Headers.Host = requestUri.Authority;
@@ -145,6 +144,23 @@ namespace Fancy.ResourceLinker
         protected Task<IActionResult> ProxyAsync(string baseUriKey)
         {
             return ProxyAsync(baseUriKey, HttpContext.Request.Path + HttpContext.Request.QueryString);
+        }
+
+        /// <summary>
+        /// Helper method to cobine a base uri with a relative uri.
+        /// </summary>
+        /// <param name="baseUri">The base URI.</param>
+        /// <param name="relativeUri">The relative URI.</param>
+        /// <returns>The combined uri.</returns>
+        private Uri CombineUris(string baseUri, string relativeUri)
+        {
+            baseUri = baseUri.Trim();
+            relativeUri = relativeUri.Trim();
+
+            if (baseUri.EndsWith("/")) baseUri = baseUri.Substring(0, baseUri.Length - 1);
+            if (relativeUri.StartsWith("/")) relativeUri = relativeUri.Substring(1);
+
+            return new Uri(baseUri + "/" + relativeUri);
         }
     }
 }

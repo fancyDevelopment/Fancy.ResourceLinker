@@ -1,2 +1,2 @@
 # Fancy.ResourceLinker
-A library supporting developers to link resources of a web application to easily realize an architecture which complies the HATEOAS priciples
+A library to create API Gateways with dynamic data structures and to create HATEOAS like links to resources published by ASP.NET Core.
