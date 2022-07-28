@@ -152,7 +152,7 @@ namespace Fancy.ResourceLinker
         /// <param name="baseUri">The base URI.</param>
         /// <param name="relativeUri">The relative URI.</param>
         /// <returns>The combined uri.</returns>
-        private Uri CombineUris(string baseUri, string relativeUri)
+        internal Uri CombineUris(string baseUri, string relativeUri)
         {
             baseUri = baseUri.Trim();
             relativeUri = relativeUri.Trim();

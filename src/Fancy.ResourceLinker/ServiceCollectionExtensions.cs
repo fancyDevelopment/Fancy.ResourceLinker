@@ -18,7 +18,7 @@ namespace Fancy.ResourceLinker
         /// <returns>The service collection.</returns>
         public static IServiceCollection AddResourceLinker(this IServiceCollection serviceCollection, params Assembly[] assemblies)
         {
-            serviceCollection.AddTransient(typeof (IResourceLinker), typeof (ResourceLinker));
+            serviceCollection.AddTransient(typeof(IResourceLinker), typeof(ResourceLinker));
 
             // Find all link strategies in provided assemblies and register them
             foreach (Assembly assembly in assemblies)
@@ -31,6 +31,12 @@ namespace Fancy.ResourceLinker
                 }
             }
 
+            return serviceCollection;
+        }
+
+        public static IServiceCollection AddResourceCache(this IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddSingleton<IResourceCache, InMemoryResourceCache>();
             return serviceCollection;
         }
     }

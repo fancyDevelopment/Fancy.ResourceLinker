@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 
 namespace Fancy.ResourceLinker.Models
 {
@@ -14,6 +15,11 @@ namespace Fancy.ResourceLinker.Models
         /// <param name="href">The href.</param>
         public ResourceAction(string method, string href)
         {
+            if(method.Trim().ToLower() == "get")
+            {
+                throw new ArgumentException("An action may not have the HTTP Verb GET", "method");
+            }
+
             Method = method;
             Href = href;
         }
