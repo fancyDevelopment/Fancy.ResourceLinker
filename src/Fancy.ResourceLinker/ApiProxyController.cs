@@ -105,17 +105,35 @@ namespace Fancy.ResourceLinker
             proxyRequest.RequestUri = requestUri;
 
             HttpResponseMessage proxyResponse = await _httpClient.SendAsync(proxyRequest);
-            proxyResponse.EnsureSuccessStatusCode();
 
-            if (proxyResponse.Content.Headers.ContentLength > 0)
+            if ((int)proxyResponse.StatusCode >= 200 && (int)proxyResponse.StatusCode < 500)
             {
-                string content = await proxyResponse.Content.ReadAsStringAsync();
-                string contentType = proxyResponse.Content.Headers.ContentType?.MediaType;
-                return new ContentResult { StatusCode = (int)proxyResponse.StatusCode, Content = content, ContentType = contentType };
+                if (proxyResponse.Content.Headers.ContentLength > 0)
+                {
+                    string content = await proxyResponse.Content.ReadAsStringAsync();
+                    string contentType = proxyResponse.Content.Headers.ContentType?.MediaType;
+                    return new ContentResult { StatusCode = (int)proxyResponse.StatusCode, Content = content, ContentType = contentType };
+                }
+                else
+                {
+                    return new StatusCodeResult((int)proxyResponse.StatusCode);
+                }
             }
             else
             {
-                return new StatusCodeResult((int)proxyResponse.StatusCode);
+                if (proxyResponse.Content.Headers.ContentLength > 0)
+                {
+                    string content = "Internal Error from Microservice \n";
+                    content += "------------------------------------------\n";
+                    content += await proxyResponse.Content.ReadAsStringAsync();
+                    return new ContentResult { StatusCode = 500, Content = content, ContentType = "text" };
+                }
+                else
+                {
+                    string content = "Internal Error from Microservice with no detailed error message.";
+                    return new ContentResult { StatusCode = 500, Content = content, ContentType = "text" };
+
+                }
             }
         }
 
