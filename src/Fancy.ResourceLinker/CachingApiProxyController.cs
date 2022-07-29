@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Fancy.ResourceLinker
 {
-    internal class CachingApiProxyController : ApiProxyController
+    public class CachingApiProxyController : ApiProxyController
     {
         private readonly IResourceCache _resourceCache;
 
