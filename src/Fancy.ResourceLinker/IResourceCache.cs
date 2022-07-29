@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Fancy.ResourceLinker
 {
-    internal interface IResourceCache
+    public interface IResourceCache
     {
         void Write<TResource>(string key, TResource data) where TResource : class;
 
