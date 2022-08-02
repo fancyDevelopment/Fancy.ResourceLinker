@@ -41,7 +41,7 @@ namespace Fancy.ResourceLinker
         }
 
         /// <summary>
-        /// Gets data from a url and deserializes it into a given type
+        /// Gets data from a url and deserializes it into a given type.
         /// </summary>
         /// <typeparam name="TResource">The type of the resource.</typeparam>
         /// <param name="requestUri">The uri of the data to get.</param>
@@ -64,7 +64,7 @@ namespace Fancy.ResourceLinker
         }
 
         /// <summary>
-        /// Get data from a microservice specified by its key of a provided endpoint and deserializes it into a given type
+        /// Get data from a microservice specified by its key of a provided endpoint and deserializes it into a given type.
         /// </summary>
         /// <typeparam name="TResource">The type of the resource.</typeparam>
         /// <param name="baseUriKey">The key of the microservice url to use.</param>

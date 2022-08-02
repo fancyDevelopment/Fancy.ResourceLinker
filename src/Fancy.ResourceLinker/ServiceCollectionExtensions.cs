@@ -34,9 +34,28 @@ namespace Fancy.ResourceLinker
             return serviceCollection;
         }
 
-        public static IServiceCollection AddResourceCache(this IServiceCollection serviceCollection)
+        /// <summary>
+        /// Adds a resource cache instance to the IoC container.
+        /// </summary>
+        /// <param name="serviceCollection">The service collection.</param>
+        /// <param name="cacheInstance">The cache instance or null if you would like to use the default implementation.</param>
+        /// <returns>
+        /// The service collection.
+        /// </returns>
+        /// <remarks>
+        /// The <see cref="InMemoryResourceCache" /> is registered as implementation by default.
+        /// </remarks>
+        public static IServiceCollection AddResourceCache(this IServiceCollection serviceCollection, IResourceCache cacheInstance = null)
         {
-            serviceCollection.AddSingleton<IResourceCache, InMemoryResourceCache>();
+            if(cacheInstance != null)
+            {
+                serviceCollection.AddSingleton<IResourceCache>(cacheInstance);
+            }
+            else
+            {
+                serviceCollection.AddSingleton<IResourceCache, InMemoryResourceCache>();
+            }
+
             return serviceCollection;
         }
     }
