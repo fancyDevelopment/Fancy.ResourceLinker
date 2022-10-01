@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker", "src
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker.IntegrationTests", "src\Fancy.ResourceLinker.IntegrationTests\Fancy.ResourceLinker.IntegrationTests.csproj", "{42E342E4-DA08-459D-B43D-FE7AE03549C8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker.UnitTests", "src\Fancy.ResourceLinker.UnitTests\Fancy.ResourceLinker.UnitTests.csproj", "{583709E2-6841-44B8-8A36-C5E0B6332B9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42E342E4-DA08-459D-B43D-FE7AE03549C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{583709E2-6841-44B8-8A36-C5E0B6332B9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{583709E2-6841-44B8-8A36-C5E0B6332B9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{583709E2-6841-44B8-8A36-C5E0B6332B9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{583709E2-6841-44B8-8A36-C5E0B6332B9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
