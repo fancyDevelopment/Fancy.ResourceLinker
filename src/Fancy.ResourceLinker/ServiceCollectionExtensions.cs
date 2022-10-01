@@ -18,7 +18,7 @@ namespace Fancy.ResourceLinker
         /// <returns>The service collection.</returns>
         public static IServiceCollection AddResourceLinker(this IServiceCollection serviceCollection, params Assembly[] assemblies)
         {
-            serviceCollection.AddTransient(typeof (IResourceLinker), typeof (ResourceLinker));
+            serviceCollection.AddTransient(typeof(IResourceLinker), typeof(ResourceLinker));
 
             // Find all link strategies in provided assemblies and register them
             foreach (Assembly assembly in assemblies)
@@ -29,6 +29,31 @@ namespace Fancy.ResourceLinker
                 {
                     serviceCollection.AddTransient(typeof(ILinkStrategy), linkStrategy);
                 }
+            }
+
+            return serviceCollection;
+        }
+
+        /// <summary>
+        /// Adds a resource cache instance to the IoC container.
+        /// </summary>
+        /// <param name="serviceCollection">The service collection.</param>
+        /// <param name="cacheInstance">The cache instance or null if you would like to use the default implementation.</param>
+        /// <returns>
+        /// The service collection.
+        /// </returns>
+        /// <remarks>
+        /// The <see cref="InMemoryResourceCache" /> is registered as implementation by default.
+        /// </remarks>
+        public static IServiceCollection AddResourceCache(this IServiceCollection serviceCollection, IResourceCache cacheInstance = null)
+        {
+            if(cacheInstance != null)
+            {
+                serviceCollection.AddSingleton<IResourceCache>(cacheInstance);
+            }
+            else
+            {
+                serviceCollection.AddSingleton<IResourceCache, InMemoryResourceCache>();
             }
 
             return serviceCollection;

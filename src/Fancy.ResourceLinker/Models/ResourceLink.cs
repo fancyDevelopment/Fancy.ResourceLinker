@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-
+﻿
 namespace Fancy.ResourceLinker.Models
 {
     /// <summary>
@@ -22,7 +21,6 @@ namespace Fancy.ResourceLinker.Models
         /// <value>
         /// The href.
         /// </value>
-        [JsonProperty("href")]
         public string Href { get; set; }
     }
 }

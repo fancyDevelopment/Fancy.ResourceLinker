@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyTitle>Fancy.ResourceLinker</AssemblyTitle>
     <VersionPrefix>0.0.13</VersionPrefix>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>Fancy.ResourceLinker</AssemblyName>
     <PackageId>Fancy.ResourceLinker</PackageId>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
@@ -25,8 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.0.2" />
-    <PackageReference Include="System.Text.Json" Version="5.0.0" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>
