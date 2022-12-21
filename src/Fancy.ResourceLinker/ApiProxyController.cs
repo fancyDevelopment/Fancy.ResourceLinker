@@ -37,6 +37,7 @@ namespace Fancy.ResourceLinker
         public ApiProxyController(Dictionary<string, Uri> baseUris)
         {
             _baseUris = baseUris;
+            _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             _serializerOptions.AddResourceConverter();
         }
 
