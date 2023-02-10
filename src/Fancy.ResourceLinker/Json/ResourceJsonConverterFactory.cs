@@ -18,12 +18,19 @@ namespace Fancy.ResourceLinker.Json
         private readonly bool _writePrivates;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ResourceJsonConverterFactory"/> class.
+        /// The ignore empty metadata
+        /// </summary>
+        private readonly bool _ignoreEmptyMetadata;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResourceJsonConverterFactory" /> class.
         /// </summary>
         /// <param name="writePrivates">if set to <c>true</c> the convertes write private json fields.</param>
-        public ResourceJsonConverterFactory(bool writePrivates)
+        /// <param name="ignoreEmptyMetadata">if set to <c>true</c> ignores empty metadata fields.</param>
+        public ResourceJsonConverterFactory(bool writePrivates, bool ignoreEmptyMetadata)
         {
             _writePrivates = writePrivates;
+            _ignoreEmptyMetadata = ignoreEmptyMetadata;
         }
 
         /// <summary>
@@ -52,7 +59,7 @@ namespace Fancy.ResourceLinker.Json
                 typeof(ResourceJsonConverter<>).MakeGenericType(new Type[] { typeToConvert }),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                args: new object[] { _writePrivates },
+                args: new object[] { _writePrivates, _ignoreEmptyMetadata },
                 culture: null);
 
             return converter;

@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -19,12 +20,19 @@ namespace Fancy.ResourceLinker.Json
         private readonly bool _writePrivates;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ResourceJsonConverter{T}"/> class.
+        /// A flag to indicate if empty metadata fields shall be ignored.
         /// </summary>
-        /// <param name="writePrivates">if set to <c>true</c> [write privates].</param>
-        public ResourceJsonConverter(bool writePrivates)
+        private readonly bool _ignoreEmptyMetadata;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResourceJsonConverter{T}" /> class.
+        /// </summary>
+        /// <param name="writePrivates">if set to <c>true</c> the converter reads and writes private fields.</param>
+        /// <param name="ignoreEmptyMetadata">if set to <c>true</c> ignores empty metadata fields.</param>
+        public ResourceJsonConverter(bool writePrivates, bool ignoreEmptyMetadata)
         {
             _writePrivates = writePrivates;
+            _ignoreEmptyMetadata = ignoreEmptyMetadata;
         }
 
         /// <summary>
@@ -115,7 +123,19 @@ namespace Fancy.ResourceLinker.Json
                 {
                     string key = pair.Key;
                     key = char.ToLower(key[0]) + key.Substring(1);
-                    if (key == "links" || key == "actions" || key == "sockets") key = "_" + key;
+                    if (key == "links" || key == "actions" || key == "sockets")
+                    {
+                        key = "_" + key;
+
+                        if (_ignoreEmptyMetadata)
+                        {
+                            IDictionary metadataDictionary = pair.Value as IDictionary;
+                            if (metadataDictionary != null && metadataDictionary.Count == 0)
+                            {
+                                continue;
+                            }
+                        }
+                    }
 
                     if (key.StartsWith("_") && !_writePrivates) continue;
 
