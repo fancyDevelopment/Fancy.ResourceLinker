@@ -6,6 +6,12 @@ using System;
 
 namespace Fancy.ResourceLinker.IntegrationTests
 {
+    class TestObject : ResourceBase
+    {
+        public int IntProperty { get; set; } = 5;
+        public string StringProperty { get; set; } = "foobar";
+    }
+
     /// <summary>
     /// Test class to test serialization and deserializsation using the resource converter. 
     /// </summary>
@@ -25,6 +31,7 @@ namespace Fancy.ResourceLinker.IntegrationTests
             ""arrayProperty"": [ 5, ""foo"", { ""objInArrProperty"": ""fooInArray"" }, [ ""subarray"", 6, true ] ]
         }";
 
+
         /// <summary>
         /// Tests the deserialization of the complex object to a dynamic resource.
         /// </summary>
@@ -32,7 +39,7 @@ namespace Fancy.ResourceLinker.IntegrationTests
         public void DeserializeAndSerializeComplexObject()
         {
             JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
-            serializerOptions.AddResourceConverter(false);
+            serializerOptions.AddResourceConverter(false, false);
 
             dynamic? deserializedObject = JsonSerializer.Deserialize<DynamicResource>(TEST_DATA, serializerOptions);
 
@@ -52,6 +59,47 @@ namespace Fancy.ResourceLinker.IntegrationTests
             string serializedObject = JsonSerializer.Serialize(deserializedObject, serializerOptions);
 
             Assert.AreEqual(TEST_DATA.Replace(Environment.NewLine, "").Replace(" ", ""), serializedObject);
+        }
+
+        [TestMethod]
+        public void SerializeComplexObjectWithoutEmptyMetadata_InObjectWithNoMetadata()
+        {
+            TestObject data = new TestObject();
+
+            JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
+            serializerOptions.AddResourceConverter(true, true);
+
+            string serializedObject = JsonSerializer.Serialize(data, serializerOptions);
+
+            JsonDocument document = JsonDocument.Parse(serializedObject);
+
+            Assert.AreEqual(5, document.RootElement.GetProperty("intProperty").GetInt32());
+            Assert.AreEqual("foobar", document.RootElement.GetProperty("stringProperty").GetString());
+            Assert.IsFalse(document.RootElement.TryGetProperty("_links", out var _linksPorperty));
+            Assert.IsFalse(document.RootElement.TryGetProperty("_actions", out var _actionsProperty));
+            Assert.IsFalse(document.RootElement.TryGetProperty("_sockets", out var _socketsPorperty));
+        }
+
+        [TestMethod]
+        public void SerializeComplexObjectWithoutEmptyMetadata_InObjectWithMetadata()
+        {
+            TestObject data = new TestObject();
+            data.AddLink("self", "http://my.domain/api/my/object");
+
+            JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
+            serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            serializerOptions.AddResourceConverter(true, true);
+
+            string serializedObject = JsonSerializer.Serialize(data, serializerOptions);
+
+            JsonDocument document = JsonDocument.Parse(serializedObject);
+
+            Assert.AreEqual(5, document.RootElement.GetProperty("intProperty").GetInt32());
+            Assert.AreEqual("foobar", document.RootElement.GetProperty("stringProperty").GetString());
+            Assert.IsTrue(document.RootElement.TryGetProperty("_links", out var _linksPorperty));
+            Assert.AreEqual(_linksPorperty.GetProperty("self").GetProperty("href").GetString(), "http://my.domain/api/my/object");
+            Assert.IsFalse(document.RootElement.TryGetProperty("_actions", out var _actionsProperty));
+            Assert.IsFalse(document.RootElement.TryGetProperty("_sockets", out var _socketsPorperty));
         }
     }
 }
