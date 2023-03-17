@@ -1,8 +1,10 @@
 ﻿using Fancy.ResourceLinker.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -147,6 +149,25 @@ namespace Fancy.ResourceLinker
             return ProxyAsync(baseUriKey, HttpContext.Request.Path + HttpContext.Request.QueryString);
         }
 
+        protected async Task ProxyBinaryAsync(string baseUriKey, string relativeUri)
+        {
+            HttpClient httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
+
+            Uri uri = CombineUris(_baseUris[baseUriKey].AbsoluteUri, relativeUri);
+            using (HttpRequestMessage proxyRequestMessage = CreateProxyHttpRequest(uri))
+            {
+                using (HttpResponseMessage proxyResponseMessage = await httpClient.SendAsync(proxyRequestMessage))
+                {
+                    await CopyProxyHttpResponse(proxyResponseMessage);
+                }
+            }
+        }
+
+        protected Task ProxyBinaryAsync(string baseUriKey)
+        {
+            return ProxyBinaryAsync(baseUriKey, HttpContext.Request.Path + HttpContext.Request.QueryString);
+        }
+
         /// <summary>
         /// Helper method to cobine a base uri with a relative uri.
         /// </summary>
@@ -162,6 +183,73 @@ namespace Fancy.ResourceLinker
             if (relativeUri.StartsWith("/")) relativeUri = relativeUri.Substring(1);
 
             return new Uri(baseUri + "/" + relativeUri);
+        }
+
+        private HttpRequestMessage CreateProxyHttpRequest(Uri uri)
+        {
+            var request = HttpContext.Request;
+
+            var requestMessage = new HttpRequestMessage();
+            var requestMethod = request.Method;
+            if (!HttpMethods.IsGet(requestMethod) &&
+                !HttpMethods.IsHead(requestMethod) &&
+                !HttpMethods.IsDelete(requestMethod) &&
+                !HttpMethods.IsTrace(requestMethod))
+            {
+                request.Body.Position = 0;
+                var streamContent = new StreamContent(request.Body);
+                requestMessage.Content = streamContent;
+            }
+
+            // Copy the request headers
+            foreach (var header in request.Headers)
+            {
+                if (!requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()) && requestMessage.Content != null)
+                {
+                    requestMessage.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
+                }
+            }
+
+            requestMessage.Headers.Host = uri.Authority;
+            requestMessage.RequestUri = uri;
+            requestMessage.Method = new HttpMethod(request.Method);
+
+            return requestMessage;
+        }
+
+        public async Task CopyProxyHttpResponse(HttpResponseMessage responseMessage)
+        {
+            if (responseMessage == null)
+            {
+                throw new ArgumentNullException(nameof(responseMessage));
+            }
+
+            var response = HttpContext.Response;
+
+            response.StatusCode = (int)responseMessage.StatusCode;
+            foreach (var header in responseMessage.Headers)
+            {
+                response.Headers[header.Key] = header.Value.ToArray();
+            }
+
+            foreach (var header in responseMessage.Content.Headers)
+            {
+                response.Headers[header.Key] = header.Value.ToArray();
+            }
+
+            // SendAsync removes chunking from the response. This removes the header so it doesn't expect a chunked response.
+            response.Headers.Remove("transfer-encoding");
+
+            if (!responseMessage.Content.Headers.ContentLength.HasValue || responseMessage.Content.Headers.ContentLength.Value == 0)
+            {
+                response.StatusCode = (int)responseMessage.StatusCode;
+                return;
+            }
+
+            using (var responseStream = await responseMessage.Content.ReadAsStreamAsync())
+            {
+                await responseStream.CopyToAsync(response.Body, HttpContext.RequestAborted);
+            }
         }
     }
 }
