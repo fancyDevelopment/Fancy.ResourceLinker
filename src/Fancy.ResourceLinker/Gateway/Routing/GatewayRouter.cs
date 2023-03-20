@@ -1,47 +1,49 @@
-﻿using Fancy.ResourceLinker.Json;
+﻿using Fancy.ResourceLinker.Gateway.Authentication;
+using Fancy.ResourceLinker.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Yarp.ReverseProxy.Forwarder;
 
-namespace Fancy.ResourceLinker
+namespace Fancy.ResourceLinker.Gateway.Routing
 {
-    /// <summary>
-    /// Controller base class for API proxy controllers to to forward requests to microservices.
-    /// </summary>
-    public class ApiProxyController : HypermediaController
+    public class GatewayRouter
     {
         /// <summary>
         /// The HTTP client.
         /// </summary>
         private readonly HttpClient _httpClient = new HttpClient();
 
+        private readonly ForwarderRequestConfig _forwarderRequestConfig = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(100) };
+        private readonly HttpTransformer _forwarderTransformer = new GatewayForwarderHttpTransformer();
+
         /// <summary>
         /// The serializer options used to deserialize received json.
         /// </summary>
         private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions();
 
-        /// <summary>
-        /// The base urls of the microservices mapped to a unique key.
-        /// </summary>
-        protected readonly Dictionary<string, Uri> _baseUris;
+        private readonly GatewayRoutingSettings _settings;
+        private readonly IHttpForwarder _forwarder;
+        private readonly TokenService? _tokenService;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ApiProxyController"/> class.
-        /// </summary>
-        /// <param name="baseUris">The base uris of the microservices each mapped to a unique key.</param>
-        public ApiProxyController(Dictionary<string, Uri> baseUris)
+        public GatewayRouter(IOptions<GatewayRoutingSettings> settings, IHttpForwarder forwarder, IServiceProvider serviceProvider)
         {
-            _baseUris = baseUris;
+            _settings = settings.Value;
+            _forwarder = forwarder;
+
             _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             _serializerOptions.AddResourceConverter();
+
+            // Check if a token service is available
+            _tokenService = serviceProvider.GetService<TokenService>();
         }
 
         /// <summary>
@@ -50,7 +52,7 @@ namespace Fancy.ResourceLinker
         /// <typeparam name="TResource">The type of the resource.</typeparam>
         /// <param name="requestUri">The uri of the data to get.</param>
         /// <returns>The result deserialized into the specified resource type.</returns>
-        protected async Task<TResource> GetAsync<TResource>(Uri requestUri) where TResource : class
+        public async Task<TResource> GetAsync<TResource>(Uri requestUri) where TResource : class
         {
             // Set up request
             HttpRequestMessage request = new HttpRequestMessage()
@@ -60,6 +62,11 @@ namespace Fancy.ResourceLinker
             };
 
             request.Headers.Add("ResourceProxy", "http://localhost:5101");
+
+            if(_tokenService != null)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
+            }
 
             // Get data from microservice
             HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
@@ -72,7 +79,7 @@ namespace Fancy.ResourceLinker
             }
             else
             {
-                return default(TResource);
+                return default;
             }
         }
 
@@ -80,12 +87,12 @@ namespace Fancy.ResourceLinker
         /// Get data from a microservice specified by its key of a provided endpoint and deserializes it into a given type.
         /// </summary>
         /// <typeparam name="TResource">The type of the resource.</typeparam>
-        /// <param name="baseUriKey">The key of the microservice url to use.</param>
+        /// <param name="microserviceKey">The key of the microservice url to use.</param>
         /// <param name="relativeUrl">The relative url to the endpoint.</param>
         /// <returns>The result deserialized into the specified resource type.</returns>
-        protected Task<TResource> GetAsync<TResource>(string baseUriKey, string relativeUrl) where TResource : class
+        public Task<TResource> GetAsync<TResource>(string microserviceKey, string relativeUrl) where TResource : class
         {
-            Uri requestUri = CombineUris(_baseUris[baseUriKey].AbsoluteUri, relativeUrl);
+            Uri requestUri = CombineUris(_settings.Microservices[microserviceKey].BaseUrl.AbsoluteUri, relativeUrl);
             return GetAsync<TResource>(requestUri);
         }
 
@@ -93,28 +100,33 @@ namespace Fancy.ResourceLinker
         /// Sends the current request to a microservice.
         /// </summary>
         /// <param name="baseUriKey">The key to the uri of the microservcie to send the request to.</param>
-        /// <param name="relativeUrl">The relative url to the endpoint.</param>
+        /// <param name="microserviceKey">The relative url to the endpoint.</param>
         /// <returns>The response of the call to the microservice as IActionResult</returns>
-        protected async Task<IActionResult> ProxyAsync(string baseUriKey, string relativeUrl)
+        public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string microserviceKey, string relativeUrl)
         {
             HttpRequestMessage proxyRequest = new HttpRequestMessage();
 
-            if (HttpContext.Request.ContentLength > 0)
+            if (httpContext.Request.ContentLength > 0)
             {
-                using (StreamReader reader = new StreamReader(HttpContext.Request.Body))
+                using (StreamReader reader = new StreamReader(httpContext.Request.Body))
                 {
                     string content = await reader.ReadToEndAsync();
-                    proxyRequest.Content = new StringContent(content, Encoding.UTF8, HttpContext.Request.ContentType);
+                    proxyRequest.Content = new StringContent(content, Encoding.UTF8, httpContext.Request.ContentType);
                 }
             }
 
-            proxyRequest.Method = new HttpMethod(HttpContext.Request.Method);
+            proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
 
-            Uri requestUri = CombineUris(_baseUris[baseUriKey].AbsoluteUri, relativeUrl);
+            Uri requestUri = CombineUris(_settings.Microservices[microserviceKey].BaseUrl.AbsoluteUri, relativeUrl);
 
-            proxyRequest.Headers.Add("Accept", HttpContext.Request.Headers["Accept"].ToString());
+            proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());
             proxyRequest.Headers.Host = requestUri.Authority;
             proxyRequest.RequestUri = requestUri;
+
+            if (_tokenService != null)
+            {
+                proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
+            }
 
             HttpResponseMessage proxyResponse = await _httpClient.SendAsync(proxyRequest);
 
@@ -154,28 +166,25 @@ namespace Fancy.ResourceLinker
         /// </summary>
         /// <param name="baseUriKey">The key to the uri of the microservcie to send the request to.</param>
         /// <returns>The response of the call to the microservice as IActionResult</returns>
-        protected Task<IActionResult> ProxyAsync(string baseUriKey)
+        public Task<IActionResult> ProxyAsync(HttpContext httpContext, string microserviceKey)
         {
-            return ProxyAsync(baseUriKey, HttpContext.Request.Path + HttpContext.Request.QueryString);
+            return ProxyAsync(httpContext, microserviceKey, httpContext.Request.Path + httpContext.Request.QueryString);
         }
 
-        protected async Task ProxyBinaryAsync(string baseUriKey, string relativeUri)
+        public async Task ForwardAsync(HttpContext httpContext, string microserviceKey)
         {
-            HttpClient httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
+            string targetUrl = _settings.Microservices[microserviceKey].BaseUrl.AbsoluteUri;
 
-            Uri uri = CombineUris(_baseUris[baseUriKey].AbsoluteUri, relativeUri);
-            using (HttpRequestMessage proxyRequestMessage = CreateProxyHttpRequest(uri))
+            // Forward request to microservice
+            ForwarderError error = await _forwarder.SendAsync(httpContext, targetUrl, _httpClient, _forwarderRequestConfig, _forwarderTransformer);
+            
+            // Check if the operation was successful
+            if (error != ForwarderError.None)
             {
-                using (HttpResponseMessage proxyResponseMessage = await httpClient.SendAsync(proxyRequestMessage))
-                {
-                    await CopyProxyHttpResponse(proxyResponseMessage);
-                }
+                IForwarderErrorFeature errorFeature = httpContext.GetForwarderErrorFeature();
+                Exception exception = errorFeature.Exception;
+                throw exception;
             }
-        }
-
-        protected Task ProxyBinaryAsync(string baseUriKey)
-        {
-            return ProxyBinaryAsync(baseUriKey, HttpContext.Request.Path + HttpContext.Request.QueryString);
         }
 
         /// <summary>
@@ -193,73 +202,6 @@ namespace Fancy.ResourceLinker
             if (relativeUri.StartsWith("/")) relativeUri = relativeUri.Substring(1);
 
             return new Uri(baseUri + "/" + relativeUri);
-        }
-
-        private HttpRequestMessage CreateProxyHttpRequest(Uri uri)
-        {
-            var request = HttpContext.Request;
-
-            var requestMessage = new HttpRequestMessage();
-            var requestMethod = request.Method;
-            if (!HttpMethods.IsGet(requestMethod) &&
-                !HttpMethods.IsHead(requestMethod) &&
-                !HttpMethods.IsDelete(requestMethod) &&
-                !HttpMethods.IsTrace(requestMethod))
-            {
-                request.Body.Position = 0;
-                var streamContent = new StreamContent(request.Body);
-                requestMessage.Content = streamContent;
-            }
-
-            // Copy the request headers
-            foreach (var header in request.Headers)
-            {
-                if (!requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()) && requestMessage.Content != null)
-                {
-                    requestMessage.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
-                }
-            }
-
-            requestMessage.Headers.Host = uri.Authority;
-            requestMessage.RequestUri = uri;
-            requestMessage.Method = new HttpMethod(request.Method);
-
-            return requestMessage;
-        }
-
-        private async Task CopyProxyHttpResponse(HttpResponseMessage responseMessage)
-        {
-            if (responseMessage == null)
-            {
-                throw new ArgumentNullException(nameof(responseMessage));
-            }
-
-            var response = HttpContext.Response;
-
-            response.StatusCode = (int)responseMessage.StatusCode;
-            foreach (var header in responseMessage.Headers)
-            {
-                response.Headers[header.Key] = header.Value.ToArray();
-            }
-
-            foreach (var header in responseMessage.Content.Headers)
-            {
-                response.Headers[header.Key] = header.Value.ToArray();
-            }
-
-            // SendAsync removes chunking from the response. This removes the header so it doesn't expect a chunked response.
-            response.Headers.Remove("transfer-encoding");
-
-            if (!responseMessage.Content.Headers.ContentLength.HasValue || responseMessage.Content.Headers.ContentLength.Value == 0)
-            {
-                response.StatusCode = (int)responseMessage.StatusCode;
-                return;
-            }
-
-            using (var responseStream = await responseMessage.Content.ReadAsStreamAsync())
-            {
-                await responseStream.CopyToAsync(response.Body, HttpContext.RequestAborted);
-            }
         }
     }
 }
