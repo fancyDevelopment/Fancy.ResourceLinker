@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication
@@ -53,6 +56,20 @@ namespace Fancy.ResourceLinker.Gateway.Authentication
             {
                 return tokenRecord.AccessToken;
             }
+        }
+
+        public async Task<IEnumerable<Claim>> GetIdentityClaimsAsync()
+        {
+            TokenRecord? tokenRecord = await _tokenStore.GetTokensAsync(CurrentUser);
+
+            if (tokenRecord == null)
+            {
+                throw new InvalidOperationException("No token for user " + CurrentUser + " available");
+            }
+
+            JwtSecurityToken idToken = new JwtSecurityTokenHandler().ReadJwtToken(tokenRecord.IdToken);
+
+            return idToken.Claims;
         }
 
         private bool IsExpired(TokenRecord tokentRecord)
