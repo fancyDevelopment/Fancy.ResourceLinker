@@ -10,13 +10,11 @@ namespace Fancy.ResourceLinker.Gateway.Authentication
 {
     internal class TokenService
     {
-        private readonly GatewayAuthenticationSettings _settings;
         private readonly ITokenStore _tokenStore;
         private readonly TokenRefreshService _tokenRefreshService;
 
-        public TokenService(IOptions<GatewayAuthenticationSettings> settings, ITokenStore tokenStore, TokenRefreshService tokenRefreshService) 
+        public TokenService(ITokenStore tokenStore, TokenRefreshService tokenRefreshService) 
         {
-            _settings = settings.Value;
             _tokenStore = tokenStore;
             _tokenRefreshService = tokenRefreshService;
         }
