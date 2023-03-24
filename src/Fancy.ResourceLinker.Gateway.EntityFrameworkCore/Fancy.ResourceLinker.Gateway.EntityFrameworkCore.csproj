@@ -6,4 +6,17 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="6.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fancy.ResourceLinker.Gateway\Fancy.ResourceLinker.Gateway.csproj" />
+  </ItemGroup>
+
 </Project>
