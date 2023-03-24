@@ -15,6 +15,8 @@ namespace Fancy.ResourceLinker.Gateway.Routing
 {
     internal class GatewayForwarderHttpTransformer : HttpTransformer
     {
+        public static readonly string SendAccessTokenItemKey = "SendAccessTokenItemKey";
+
         public override async ValueTask TransformRequestAsync(HttpContext httpContext,
         HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
         {
@@ -24,7 +26,7 @@ namespace Fancy.ResourceLinker.Gateway.Routing
             // Add access token
             TokenService? tokenService = httpContext.RequestServices.GetService(typeof(TokenService)) as TokenService;
 
-            if(tokenService == null)
+            if (Convert.ToBoolean(httpContext.Items[SendAccessTokenItemKey]))
             {
                 proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await tokenService.GetAccessTokenAsync());
             }

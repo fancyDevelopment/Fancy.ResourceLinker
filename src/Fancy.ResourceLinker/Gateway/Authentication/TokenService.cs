@@ -58,6 +58,8 @@ namespace Fancy.ResourceLinker.Gateway.Authentication
 
         public async Task<IEnumerable<Claim>> GetIdentityClaimsAsync()
         {
+            if (CurrentUser == null) return null;
+
             TokenRecord? tokenRecord = await _tokenStore.GetTokensAsync(CurrentUser);
 
             if (tokenRecord == null)

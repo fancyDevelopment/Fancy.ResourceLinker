@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication
@@ -65,12 +66,17 @@ namespace Fancy.ResourceLinker.Gateway.Authentication
                 var claims = await tokenService.GetIdentityClaimsAsync();
                 var dictionary = new Dictionary<string, string>();
 
+                if(claims == null)
+                {
+                    return Results.Unauthorized();
+                }
+
                 foreach (var entry in claims)
                 {
                     dictionary[entry.Type] = entry.Value;
                 }
 
-                return dictionary;
+                return Results.Ok(dictionary);
             });
         }
     }

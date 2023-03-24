@@ -52,7 +52,7 @@ namespace Fancy.ResourceLinker.Gateway.Routing
         /// <typeparam name="TResource">The type of the resource.</typeparam>
         /// <param name="requestUri">The uri of the data to get.</param>
         /// <returns>The result deserialized into the specified resource type.</returns>
-        public async Task<TResource> GetAsync<TResource>(Uri requestUri) where TResource : class
+        private async Task<TResource> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
         {
             // Set up request
             HttpRequestMessage request = new HttpRequestMessage()
@@ -63,7 +63,7 @@ namespace Fancy.ResourceLinker.Gateway.Routing
 
             request.Headers.Add("ResourceProxy", "http://localhost:5101");
 
-            if(_tokenService != null)
+            if(sendAccessToken)
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
             }
@@ -87,22 +87,22 @@ namespace Fancy.ResourceLinker.Gateway.Routing
         /// Get data from a microservice specified by its key of a provided endpoint and deserializes it into a given type.
         /// </summary>
         /// <typeparam name="TResource">The type of the resource.</typeparam>
-        /// <param name="microserviceKey">The key of the microservice url to use.</param>
+        /// <param name="routeKey">The key of the route to use.</param>
         /// <param name="relativeUrl">The relative url to the endpoint.</param>
         /// <returns>The result deserialized into the specified resource type.</returns>
-        public Task<TResource> GetAsync<TResource>(string microserviceKey, string relativeUrl) where TResource : class
+        public Task<TResource> GetAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
         {
-            Uri requestUri = CombineUris(_settings.Microservices[microserviceKey].BaseUrl.AbsoluteUri, relativeUrl);
-            return GetAsync<TResource>(requestUri);
+            Uri requestUri = CombineUris(_settings.Routes[routeKey].BaseUrl.AbsoluteUri, relativeUrl);
+            return GetAsync<TResource>(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
         }
 
         /// <summary>
         /// Sends the current request to a microservice.
         /// </summary>
-        /// <param name="baseUriKey">The key to the uri of the microservcie to send the request to.</param>
-        /// <param name="microserviceKey">The relative url to the endpoint.</param>
+        /// <param name="routeKey">The key to the uri of the microservcie to send the request to.</param>
+        /// <param name="relativeUrl">The relative url to the endpoint.</param>
         /// <returns>The response of the call to the microservice as IActionResult</returns>
-        public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string microserviceKey, string relativeUrl)
+        public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeKey, string relativeUrl)
         {
             HttpRequestMessage proxyRequest = new HttpRequestMessage();
 
@@ -117,13 +117,13 @@ namespace Fancy.ResourceLinker.Gateway.Routing
 
             proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
 
-            Uri requestUri = CombineUris(_settings.Microservices[microserviceKey].BaseUrl.AbsoluteUri, relativeUrl);
+            Uri requestUri = CombineUris(_settings.Routes[routeKey].BaseUrl.AbsoluteUri, relativeUrl);
 
             proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());
             proxyRequest.Headers.Host = requestUri.Authority;
             proxyRequest.RequestUri = requestUri;
 
-            if (_tokenService != null)
+            if (_settings.Routes[routeKey].EnforceAuthentication)
             {
                 proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
             }
@@ -166,14 +166,15 @@ namespace Fancy.ResourceLinker.Gateway.Routing
         /// </summary>
         /// <param name="baseUriKey">The key to the uri of the microservcie to send the request to.</param>
         /// <returns>The response of the call to the microservice as IActionResult</returns>
-        public Task<IActionResult> ProxyAsync(HttpContext httpContext, string microserviceKey)
+        public Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeKey)
         {
-            return ProxyAsync(httpContext, microserviceKey, httpContext.Request.Path + httpContext.Request.QueryString);
+            return ProxyAsync(httpContext, routeKey, httpContext.Request.Path + httpContext.Request.QueryString);
         }
 
-        public async Task ForwardAsync(HttpContext httpContext, string microserviceKey)
+        public async Task ForwardAsync(HttpContext httpContext, string routeKey)
         {
-            string targetUrl = _settings.Microservices[microserviceKey].BaseUrl.AbsoluteUri;
+            string targetUrl = _settings.Routes[routeKey].BaseUrl.AbsoluteUri;
+            httpContext.Items[GatewayForwarderHttpTransformer.SendAccessTokenItemKey] = _settings.Routes[routeKey].EnforceAuthentication;
 
             // Forward request to microservice
             ForwarderError error = await _forwarder.SendAsync(httpContext, targetUrl, _httpClient, _forwarderRequestConfig, _forwarderTransformer);

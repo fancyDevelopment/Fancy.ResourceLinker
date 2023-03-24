@@ -3,18 +3,24 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Web.Http.Controllers;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication
 {
     public static class GatewayAuthentication
     {
+        public static readonly string AuthenticationPolicyName = "GatewayEnforceAuthentication";
+
         public static void AddGatewayAuthentication(this IServiceCollection services, GatewayAuthenticationSettings settings)
         {
             services.AddSingleton<DiscoveryDocumentService>();
@@ -24,7 +30,7 @@ namespace Fancy.ResourceLinker.Gateway.Authentication
 
             services.AddAuthorization(options =>
             {
-                options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                options.AddPolicy(AuthenticationPolicyName, new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
             });
 
             services.AddAuthentication(options =>
