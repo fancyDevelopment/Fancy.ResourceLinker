@@ -25,9 +25,9 @@ internal class TokenRefreshService
     private readonly DiscoveryDocumentService _discoveryDocumentService;
     private DiscoveryDocument _discoveryDocument;
     
-    public TokenRefreshService(IOptions<GatewayAuthenticationSettings> settings, DiscoveryDocumentService discoveryDocumentService)
+    public TokenRefreshService(GatewayAuthenticationSettings settings, DiscoveryDocumentService discoveryDocumentService)
     {
-        _settings = settings.Value;
+        _settings = settings;
         _discoveryDocumentService = discoveryDocumentService;
     }
 

@@ -1,24 +1,22 @@
-﻿using Fancy.ResourceLinker.Gateway.Routing;
-using Microsoft.Extensions.Configuration;
+﻿using Fancy.ResourceLinker.Gateway.Authentication;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Yarp.ReverseProxy.Configuration;
 
-namespace Fancy.ResourceLinker.Gateway;
+namespace Fancy.ResourceLinker.Gateway.Routing;
 
 public static class GatewayRouting
 {
-    public static void AddGatewayRouting(this IServiceCollection services, IConfiguration config)
+    internal static void AddGatewayRouting(IServiceCollection services, GatewayRoutingSettings settings)
     {
         services.AddHttpForwarder();
-        services.Configure<GatewayRoutingSettings>(config);
-        services.AddSingleton<IResourceCache, InMemoryResourceCache>();
+        services.AddSingleton(settings);
         services.AddScoped<GatewayRouter>();
+        services.AddReverseProxy().AddGatewayRoutes(settings);
     }
 
-    public static void AddGatewayRoutes(this IReverseProxyBuilder reverseProxyBuilder, IConfiguration config)
+    internal static void AddGatewayRoutes(this IReverseProxyBuilder reverseProxyBuilder, GatewayRoutingSettings settings)
     {
-        GatewayRoutingSettings settings = config.Get<GatewayRoutingSettings>();
-
         List<RouteConfig> routes = new List<RouteConfig>();
         List<ClusterConfig> clusters = new List<ClusterConfig>();
 
@@ -42,5 +40,13 @@ public static class GatewayRouting
         }
 
         reverseProxyBuilder.LoadFromMemory(routes, clusters);
+    }
+
+    public static void UseGatewayRouting(WebApplication app)
+    {
+        app.MapReverseProxy(pipeline =>
+        {
+            pipeline.UseGatewayPipeline();
+        });
     }
 }

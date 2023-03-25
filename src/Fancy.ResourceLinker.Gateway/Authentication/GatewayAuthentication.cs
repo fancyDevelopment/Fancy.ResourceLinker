@@ -1,4 +1,4 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
+﻿using Fancy.ResourceLinker.Gateway;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
@@ -8,18 +8,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
-
-namespace Fancy.ResourceLinker.Gateway;
+namespace Fancy.ResourceLinker.Gateway.Authentication;
 
 public static class GatewayAuthentication
 {
     public static readonly string AuthenticationPolicyName = "GatewayEnforceAuthentication";
 
-    public static void AddGatewayAuthentication(this IServiceCollection services, GatewayAuthenticationSettings settings)
+    internal static void AddGatewayAuthentication(IServiceCollection services, GatewayAuthenticationSettings settings)
     {
         services.AddSingleton<DiscoveryDocumentService>();
         services.AddSingleton<TokenRefreshService>();
-        services.AddSingleton<ITokenStore, InMemoryTokenStore>();
         services.AddScoped<TokenService>();
 
         services.AddAuthorization(options =>
@@ -88,7 +86,7 @@ public static class GatewayAuthentication
         });
     }
 
-    public static void UseGatewayAuthentication(this WebApplication app)
+    public static void UseGatewayAuthentication(WebApplication app)
     {
         app.UseAuthentication();
         app.UseAuthorization();

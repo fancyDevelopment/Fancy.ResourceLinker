@@ -13,4 +13,9 @@ public class GatewayAuthenticationSettings
     public string[] Scopes { get; set; } = Array.Empty<string>();
     public string LogoutUrl { get; set; } = "";
     public bool QueryUserInfoEndpoint { get; set; } = true;
+
+    public void Validate()
+    {
+        // ToDo: Implement settings validation
+    }
 }

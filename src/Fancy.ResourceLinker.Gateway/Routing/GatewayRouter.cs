@@ -32,9 +32,9 @@ public class GatewayRouter
     private readonly TokenService? _tokenService;
     private readonly IResourceCache _resourceCache;
 
-    public GatewayRouter(IOptions<GatewayRoutingSettings> settings, IHttpForwarder forwarder, IServiceProvider serviceProvider, IResourceCache resourceCache)
+    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IServiceProvider serviceProvider, IResourceCache resourceCache)
     {
-        _settings = settings.Value;
+        _settings = settings;
         _forwarder = forwarder;
         _resourceCache = resourceCache;
         _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;

@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Fancy.ResourceLinker.Gateway.Authentication;
+namespace Fancy.ResourceLinker.Gateway.AntiForgery;
 
-public static class GatewayAntiForgery
+internal static class GatewayAntiForgery
 {
-    public static void AddGatewayAntiForgery(this IServiceCollection services)
+    public static void AddGatewayAntiForgery(IServiceCollection services)
     {
         services.AddAntiforgery(setup =>
         {
@@ -15,7 +15,7 @@ public static class GatewayAntiForgery
         });
     }
 
-    public static void UseGatewayAntiForgery(this WebApplication app)
+    public static void UseGatewayAntiForgery(WebApplication app)
     {
         app.UseXsrfCookieCreator();
         app.UseXsrfCookieChecks();
@@ -62,6 +62,7 @@ public static class GatewayAntiForgery
 
             var currentUrl = ctx.Request.Path.ToString().ToLower();
             //if (apiConfigs.Any(c => currentUrl.StartsWith(c.ApiPath)))
+            // ToDo: Find a better way when to use antiforgery by using routing configuration and local endpoints
             if (currentUrl.StartsWith("/api"))
             {
                 if (!await antiforgery.IsRequestValidAsync(ctx))

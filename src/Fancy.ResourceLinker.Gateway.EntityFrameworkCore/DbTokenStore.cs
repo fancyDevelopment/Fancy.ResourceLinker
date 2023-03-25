@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 

@@ -20,4 +20,9 @@ public class RouteSettings
 public class GatewayRoutingSettings
 {
     public IDictionary<string, RouteSettings> Routes { get; set; }
+
+    public void Validate()
+    {
+        // ToDo: Implement settings validation
+    }
 }
