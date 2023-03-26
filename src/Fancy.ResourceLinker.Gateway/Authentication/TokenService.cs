@@ -7,12 +7,12 @@ namespace Fancy.ResourceLinker.Gateway.Authentication;
 internal class TokenService
 {
     private readonly ITokenStore _tokenStore;
-    private readonly TokenRefreshService _tokenRefreshService;
+    private readonly TokenClient _tokenClient;
 
-    public TokenService(ITokenStore tokenStore, TokenRefreshService tokenRefreshService) 
+    public TokenService(ITokenStore tokenStore, TokenClient tokenClient) 
     {
         _tokenStore = tokenStore;
-        _tokenRefreshService = tokenRefreshService;
+        _tokenClient = tokenClient;
     }
 
     public string CurrentUser { get; set; }
@@ -31,6 +31,12 @@ internal class TokenService
 
     public async Task<string> GetAccessTokenAsync()
     {
+        if(CurrentUser == null)
+        {
+            var tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
+            return tokenResponse.AccessToken;
+        }
+
         TokenRecord? tokenRecord = await _tokenStore.GetTokensAsync(CurrentUser);
 
         if(tokenRecord == null)
@@ -41,7 +47,7 @@ internal class TokenService
         if(IsExpired(tokenRecord))
         {
             // Refresh the token
-            TokenRefreshResponse tokenRefresh = await _tokenRefreshService.RefreshAsync(tokenRecord.RefreshToken);
+            TokenRefreshResponse tokenRefresh = await _tokenClient.RefreshAsync(tokenRecord.RefreshToken);
             DateTimeOffset expiresAt = new DateTimeOffset(DateTime.Now).AddSeconds(Convert.ToInt32(tokenRefresh.ExpiresIn));
             await _tokenStore.SaveOrUpdateTokensAsync(CurrentUser, tokenRefresh.IdToken, tokenRefresh.AccessToken, tokenRefresh.RefreshToken, expiresAt);
             return tokenRefresh.AccessToken;

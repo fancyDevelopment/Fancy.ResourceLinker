@@ -17,7 +17,7 @@ public static class GatewayAuthentication
     internal static void AddGatewayAuthentication(IServiceCollection services, GatewayAuthenticationSettings settings)
     {
         services.AddSingleton<DiscoveryDocumentService>();
-        services.AddSingleton<TokenRefreshService>();
+        services.AddSingleton<TokenClient>();
         services.AddScoped<TokenService>();
 
         services.AddAuthorization(options =>
@@ -50,7 +50,7 @@ public static class GatewayAuthentication
             options.RequireHttpsMetadata = false;
             options.TokenValidationParameters.NameClaimType = settings.UniqueIdentifierClaimType;
 
-            foreach (var scope in settings.Scopes)
+            foreach (var scope in settings.AuthorizationCodeScopes)
             {
                 options.Scope.Add(scope);
             }

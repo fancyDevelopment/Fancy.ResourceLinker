@@ -2,7 +2,7 @@
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-internal class DiscoveryDocumentService
+public class DiscoveryDocumentService
 {
     private const string DISCOVERY_URL = "/.well-known/openid-configuration";
 

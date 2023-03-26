@@ -10,7 +10,8 @@ public class GatewayAuthenticationSettings
     public string ClientId { get; set; } = "";
     public string ClientSecret { get; set; } = "";
     public string UniqueIdentifierClaimType { get; set; } = "";
-    public string[] Scopes { get; set; } = Array.Empty<string>();
+    public string[] AuthorizationCodeScopes { get; set; } = Array.Empty<string>();
+    public string ClientCredentialsScope { get; set; } = "";
     public string LogoutUrl { get; set; } = "";
     public bool QueryUserInfoEndpoint { get; set; } = true;
 
