@@ -49,6 +49,7 @@ public class TokenClient
             { "grant_type", "refresh_token" },
             { "refresh_token", refreshToken },
             { "client_id", _settings.ClientId },
+            { "client_secret", _settings.ClientSecret }
         };
 
         HttpClient httpClient = new HttpClient();
@@ -64,6 +65,7 @@ public class TokenClient
 
         if (!response.IsSuccessStatusCode)
         {
+            string responseContent = await response.Content.ReadAsStringAsync();
             return null;
         }
 

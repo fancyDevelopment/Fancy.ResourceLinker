@@ -9,7 +9,7 @@ namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 
 public static class GatewayPersistence
 {
-    public static void AddGatewayPersistence(this WebApplication app)
+    public static void UseGatewayPersistence(this WebApplication app)
     {
         using IServiceScope scope = app.Services.CreateScope();
         GatewayDbContext dbContext = scope.ServiceProvider.GetRequiredService<GatewayDbContext>();

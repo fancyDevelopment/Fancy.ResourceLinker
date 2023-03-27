@@ -1,4 +1,5 @@
 ﻿using Fancy.ResourceLinker.Gateway;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
@@ -30,10 +31,10 @@ public static class GatewayAuthentication
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
-        .AddCookie(setup =>
+        .AddCookie(options =>
         {
-            setup.ExpireTimeSpan = TimeSpan.FromMinutes(settings.SessionTimeoutInMin);
-            setup.SlidingExpiration = true;
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(settings.SessionTimeoutInMin);
+            options.SlidingExpiration = true;
         })
         .AddOpenIdConnect(options =>
         {
@@ -77,6 +78,16 @@ public static class GatewayAuthentication
                 return Task.CompletedTask;
             };
 
+            options.Events.OnRedirectToIdentityProvider = context =>
+            {
+                if(context.Request.Headers["X-Requested-With"] == "XmlHttpRequest")
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    context.HandleResponse();
+                }
+                return Task.CompletedTask;
+            };
+
             options.Events.OnRedirectToIdentityProviderForSignOut = (context) =>
             {
                 // ToDo: Logout Handler
@@ -102,7 +113,15 @@ public static class GatewayAuthentication
                 tokenService.CurrentUser = ctx.User.Identity.Name;
             }
 
-            await next(ctx);
+            try
+            {
+                await next(ctx);
+            }
+            catch(TokenRefreshException e)
+            {
+                await ctx.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme);
+            }
+            
         });
     }
 }

@@ -35,6 +35,7 @@ internal class DbTokenStore : ITokenStore
 
         if(tokenSet == null) 
         {
+            tokenSet = new TokenSet();
             tokenSet.UserId = userId;
             _dbContext.TokenSets.Add(tokenSet);
         }
@@ -42,6 +43,7 @@ internal class DbTokenStore : ITokenStore
         tokenSet.IdToken = idToken;
         tokenSet.AccessToken = accessToken;
         tokenSet.RefreshToken = refreshToken;
+        tokenSet.ExpiresAt = expiresAt;
 
         await _dbContext.SaveChangesAsync();
     }

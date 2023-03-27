@@ -4,6 +4,10 @@ using System.Security.Claims;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
+internal class TokenRefreshException : Exception
+{
+}
+
 internal class TokenService
 {
     private readonly ITokenStore _tokenStore;
@@ -29,7 +33,7 @@ internal class TokenService
         await _tokenStore.SaveOrUpdateTokensAsync(userId, idToken, accessToken, refreshToken, expiresAt);
     }
 
-    public async Task<string> GetAccessTokenAsync()
+    public async Task<string?> GetAccessTokenAsync()
     {
         if(CurrentUser == null)
         {
@@ -48,6 +52,12 @@ internal class TokenService
         {
             // Refresh the token
             TokenRefreshResponse tokenRefresh = await _tokenClient.RefreshAsync(tokenRecord.RefreshToken);
+
+            if(tokenRefresh == null)
+            {
+                throw new TokenRefreshException();
+            }
+
             DateTimeOffset expiresAt = new DateTimeOffset(DateTime.Now).AddSeconds(Convert.ToInt32(tokenRefresh.ExpiresIn));
             await _tokenStore.SaveOrUpdateTokensAsync(CurrentUser, tokenRefresh.IdToken, tokenRefresh.AccessToken, tokenRefresh.RefreshToken, expiresAt);
             return tokenRefresh.AccessToken;

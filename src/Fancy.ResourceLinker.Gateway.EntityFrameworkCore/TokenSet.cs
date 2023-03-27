@@ -1,7 +1,10 @@
-﻿namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 
 internal class TokenSet
 {
+    [Key]
     public string UserId { get; set; }
     public string IdToken { get; set; }
     public string AccessToken { get; set; }
