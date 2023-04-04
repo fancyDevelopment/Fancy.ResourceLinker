@@ -87,13 +87,6 @@ public static class GatewayAuthentication
                 }
                 return Task.CompletedTask;
             };
-
-            options.Events.OnRedirectToIdentityProviderForSignOut = (context) =>
-            {
-                // ToDo: Logout Handler
-                // LogoutHandler.HandleLogout(context, config);
-                return Task.CompletedTask;
-            };
         });
     }
 
