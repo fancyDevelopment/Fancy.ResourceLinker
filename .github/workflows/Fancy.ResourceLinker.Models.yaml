@@ -1,0 +1,27 @@
+name: Fancy.ResourceLinker.Models
+
+on:
+  push:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Models/**'
+  pull_request:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Models/**'
+
+jobs:
+  buid:
+    steps:
+      # Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      # Execute all unit tests in the solution
+      - name: Execute unit tests
+        run: dotnet test
+
