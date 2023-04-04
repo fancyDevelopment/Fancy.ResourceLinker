@@ -23,7 +23,21 @@ jobs:
         with:
           dotnet-version: 6.0.x
 
-      # Execute all unit tests in the solution
+      # Build library
       - name: Execute unit tests
-        run: dotnet test
+        run: |
+          cd ./src/Fancy.ResourceLinker.Models/
+          dotnet build
+
+      # Execute all unit tests
+      - name: Execute unit tests
+        run: 
+          cd ./src/Fancy.ResourceLinker.Models.UTest/
+          dotnet test
+
+      # Execute all integration tests
+      - name: Execute unit tests
+        run: 
+          cd ./src/Fancy.ResourceLinker.Models.ITest/
+          dotnet test
 
