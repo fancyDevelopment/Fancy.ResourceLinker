@@ -10,6 +10,7 @@ on:
 
 jobs:
   buid:
+    runs-on: ubuntu-latest
     steps:
       # Checkout repository
       - name: Checkout
