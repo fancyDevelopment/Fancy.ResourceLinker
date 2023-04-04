@@ -4,6 +4,7 @@ on:
   push:
     paths: 
       - 'src/Fancy.ResourceLinker.Models/**'
+      - '.github/workflows/Fancy.ResourceLinker.Models.yaml'
   pull_request:
     paths: 
       - 'src/Fancy.ResourceLinker.Models/**'
