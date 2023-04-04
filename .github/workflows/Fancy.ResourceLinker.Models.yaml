@@ -4,10 +4,15 @@ on:
   push:
     paths: 
       - 'src/Fancy.ResourceLinker.Models/**'
+      - 'src/Fancy.ResourceLinker.Models.UTest/**'
+      - 'src/Fancy.ResourceLinker.Models.ITest/**'
       - '.github/workflows/Fancy.ResourceLinker.Models.yaml'
   pull_request:
     paths: 
       - 'src/Fancy.ResourceLinker.Models/**'
+      - 'src/Fancy.ResourceLinker.Models.UTest/**'
+      - 'src/Fancy.ResourceLinker.Models.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Models.yaml'
 
 jobs:
   buid:
