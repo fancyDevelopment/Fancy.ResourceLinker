@@ -9,7 +9,7 @@ namespace Fancy.ResourceLinker.Models;
 /// <summary>
 /// Base class of a resource which can be linked to other resources.
 /// </summary>
-public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object>>
+public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object?>>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceBase"/> class.
@@ -79,15 +79,15 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <summary>
     /// Gets a collection containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2"></see>.
     /// </summary>
-    public ICollection<object> Values
+    public ICollection<object?> Values
     {
         get
         {
-            List<object> values = new List<object>();
+            List<object?> values = new List<object?>();
 
             foreach (string key in StaticKeys)
             {
-                values.Add(GetType().GetProperty(key).GetValue(this));
+                values.Add(GetType().GetProperty(key)!.GetValue(this));
             }
 
             values.AddRange(DynamicProperties.Values);
@@ -107,7 +107,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <value>
     /// The dynamic properties.
     /// </value>
-    internal Dictionary<string, object> DynamicProperties { get; } = new Dictionary<string, object>();
+    internal Dictionary<string, object?> DynamicProperties { get; } = new Dictionary<string, object?>();
 
     /// <summary>
     /// Gets the static keys.
@@ -125,13 +125,13 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// </value>
     /// <param name="key">The key.</param>
     /// <returns>The object.</returns>
-    public object this[string key] 
+    public object? this[string key] 
     { 
         get
         {
             if (StaticKeys.Contains(key))
             {
-                return GetType().GetProperty(key).GetValue(this);
+                return GetType().GetProperty(key)!.GetValue(this);
             }
             else
             {
@@ -142,7 +142,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
         {
             if (StaticKeys.Contains(key))
             {
-                GetType().GetProperty(key).SetValue(this, value);
+                GetType().GetProperty(key)!.SetValue(this, value);
             }
             else
             {
@@ -187,11 +187,11 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <summary>
     /// Removes the metadata of links, actions and sockets completely from this instance.
     /// </summary>
-    public void RemoveMetadata()
+    public void ClearMetadata()
     {
-        Links = null;
-        Actions = null;
-        Sockets = null;
+        Links.Clear();
+        Actions.Clear();
+        Sockets.Clear();
     }
 
     /// <summary>
@@ -200,7 +200,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <param name="binder">The binder.</param>
     /// <param name="result">The result.</param>
     /// <returns>true if the member could be retrieved; otherwise, false.</returns>
-    public override bool TryGetMember(GetMemberBinder binder, out object result)
+    public override bool TryGetMember(GetMemberBinder binder, out object? result)
     {
         if (Keys.Contains(binder.Name))
         {
@@ -220,7 +220,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <returns>
     /// true if the member could be set; otherwise, false.
     /// </returns>
-    public override bool TrySetMember(SetMemberBinder binder, object value)
+    public override bool TrySetMember(SetMemberBinder binder, object? value)
     {
         this[binder.Name] = value;
         return true;
@@ -293,7 +293,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <returns>
     /// true if the object contains an element with the specified key; otherwise, false.
     /// </returns>
-    public bool TryGetValue(string key, out object value)
+    public bool TryGetValue(string key, out object? value)
     {
         if (Keys.Contains(key))
         {
@@ -313,7 +313,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <returns>
     /// An enumerator that can be used to iterate through the collection.
     /// </returns>
-    public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
     {
         return new ResourceEnumerator(this);
     }
