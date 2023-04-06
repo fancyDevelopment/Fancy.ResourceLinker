@@ -1,0 +1,36 @@
+name: Fancy.ResourceLinker.Gateway
+
+on:
+  push:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Gateway/**'
+      - 'src/Fancy.ResourceLinker.Gateway.UTest/**'
+      - 'src/Fancy.ResourceLinker.Gateway.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Gateway.yaml'
+  pull_request:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Gateway/**'
+      - 'src/Fancy.ResourceLinker.Gateway.UTest/**'
+      - 'src/Fancy.ResourceLinker.Gateway.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Gateway.yaml'
+
+jobs:
+  buid:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      # Build library
+      - name: Build library
+        run: |
+          cd ./src/Fancy.ResourceLinker.Gateway/
+          dotnet build
+

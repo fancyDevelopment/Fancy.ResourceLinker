@@ -1,0 +1,36 @@
+name: Fancy.ResourceLinker.Hateoas
+
+on:
+  push:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Hateoas/**'
+      - 'src/Fancy.ResourceLinker.Hateoas.UTest/**'
+      - 'src/Fancy.ResourceLinker.Hateoas.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Hateoas.yaml'
+  pull_request:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Hateoas/**'
+      - 'src/Fancy.ResourceLinker.Hateoas.UTest/**'
+      - 'src/Fancy.ResourceLinker.Hateoas.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Hateoas.yaml'
+
+jobs:
+  buid:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      # Build library
+      - name: Build library
+        run: |
+          cd ./src/Fancy.ResourceLinker.Hateoas/
+          dotnet build
+

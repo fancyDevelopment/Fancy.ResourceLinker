@@ -1,0 +1,36 @@
+name: Fancy.ResourceLinker.Gateway.EntityFrameworkCore
+
+on:
+  push:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore/**'
+      - 'src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore.UTest/**'
+      - 'src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Gateway.yaml'
+  pull_request:
+    paths: 
+      - 'src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore/**'
+      - 'src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore.UTest/**'
+      - 'src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore.ITest/**'
+      - '.github/workflows/Fancy.ResourceLinker.Gateway.EntityFrameworkCore.yaml'
+
+jobs:
+  buid:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      # Build library
+      - name: Build library
+        run: |
+          cd ./src/Fancy.ResourceLinker.Gateway.EntityFrameworkCore/
+          dotnet build
+

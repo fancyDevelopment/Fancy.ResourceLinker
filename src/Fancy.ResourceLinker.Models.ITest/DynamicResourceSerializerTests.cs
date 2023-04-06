@@ -1,8 +1,7 @@
-using Fancy.ResourceLinker.Models;
 using Fancy.ResourceLinker.Models.Json;
 using System.Text.Json;
 
-namespace FancyResourceLinker.Models.ITest;
+namespace Fancy.ResourceLinker.Models.ITest;
 
 /// <summary>
 /// A object used to test the serialization.

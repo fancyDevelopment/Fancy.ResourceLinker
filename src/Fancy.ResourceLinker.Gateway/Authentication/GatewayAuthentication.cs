@@ -11,6 +11,7 @@ using System.Security.Claims;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
+// ToDo: think about token exchange
 public static class GatewayAuthentication
 {
     public static readonly string AuthenticationPolicyName = "GatewayEnforceAuthentication";
@@ -56,23 +57,22 @@ public static class GatewayAuthentication
                 options.Scope.Add(scope);
             }
 
-            options.Events.OnTokenValidated = (context) =>
+            options.Events.OnTokenValidated = async (context) =>
             {
                 // Provide new token to token service
                 var tokenService = context.HttpContext.RequestServices.GetRequiredService<TokenService>();
-                return tokenService.SaveOrUpdateTokensAsync(context);
+                string sesstionId = await tokenService.SaveTokenForNewSessionAsync(context);
+                context.HttpContext.Items.Add("TokenSessionId", sesstionId);
             };
 
             options.Events.OnTicketReceived = (context) =>
             {
-                // Remove all claims to keep the auth cookie as small as possible
-                ClaimsIdentity identity = context.Principal.Identity as ClaimsIdentity;
-                if (identity != null)
+                string? tokenSessionId = context.HttpContext.Items["TokenSessionId"] as string;
+
+                if (!string.IsNullOrWhiteSpace(tokenSessionId))
                 {
-                    foreach (var claimType in identity.Claims.Select(c => c.Type).Where(t => t != settings.UniqueIdentifierClaimType).ToList())
-                    {
-                        identity.RemoveClaim(identity.Claims.First(c => c.Type == claimType));
-                    }
+                    // Setup a new default identity which only contians the token session id
+                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("TokenSessionId", tokenSessionId) }, context.Principal.Identity.AuthenticationType));
                 }
 
                 return Task.CompletedTask;
@@ -103,7 +103,8 @@ public static class GatewayAuthentication
 
             if (tokenService != null)
             {
-                tokenService.CurrentUser = ctx.User.Identity.Name;
+                tokenService.CurrentSessionId = ctx.User.Claims.SingleOrDefault(c => c.Type == "TokenSessionId")?.Value;
+                ctx.User.AddIdentity(new ClaimsIdentity(await tokenService.GetIdentityClaimsAsync(), "Gateway"));
             }
 
             try
