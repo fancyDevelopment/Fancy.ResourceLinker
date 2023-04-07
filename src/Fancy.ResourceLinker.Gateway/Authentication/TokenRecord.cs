@@ -1,21 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
+﻿namespace Fancy.ResourceLinker.Gateway.Authentication;
 
 /// <summary>
-/// A entity object to save token sets to database.
+/// A class to hold all token information needed for a specific user session.
 /// </summary>
-internal class TokenSet
+public class TokenRecord
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="TokenSet"/> class.
+    /// Initializes a new instance of the <see cref="TokenRecord"/> class.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="idToken">The identifier token.</param>
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiresAt">The expires at.</param>
-    public TokenSet(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt)
+    public TokenRecord(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt)
     {
         SessionId = sessionId;
         IdToken = idToken;
@@ -30,8 +28,6 @@ internal class TokenSet
     /// <value>
     /// The session identifier.
     /// </value>
-    [Key]
-    [MaxLength(40)]
     public string SessionId { get; set; }
 
     /// <summary>

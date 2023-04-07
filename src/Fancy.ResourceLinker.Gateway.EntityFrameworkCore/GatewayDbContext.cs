@@ -3,11 +3,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 
+/// <summary>
+/// A database context to hold all information needed to be persisted in a gateway.
+/// </summary>
 internal class GatewayDbContext : DbContext, IDataProtectionKeyContext
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayDbContext"/> class.
+    /// </summary>
+    /// <param name="options">The options.</param>
     public GatewayDbContext(DbContextOptions<GatewayDbContext> options) : base(options) { }
 
-    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+    /// <summary>
+    /// Gets or sets the data protection keys.
+    /// </summary>
+    /// <value>
+    /// The data protection keys.
+    /// </value>
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
-    public DbSet<TokenSet> TokenSets { get; set; }
+    /// <summary>
+    /// Gets or sets the token sets.
+    /// </summary>
+    /// <value>
+    /// The token sets.
+    /// </value>
+    public DbSet<TokenSet> TokenSets { get; set; } = null!;
 }

@@ -1,63 +1,100 @@
-﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+﻿using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-internal class TokenRefreshException : Exception
-{
-}
-
+/// <summary>
+/// A token service with handling logic for tokens needed by the gateway authentication feature.
+/// </summary>
 internal class TokenService
 {
+    /// <summary>
+    /// The token store.
+    /// </summary>
     private readonly ITokenStore _tokenStore;
+
+    /// <summary>
+    /// The token client.
+    /// </summary>
     private readonly TokenClient _tokenClient;
 
-    public TokenService(ITokenStore tokenStore, TokenClient tokenClient) 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TokenService"/> class.
+    /// </summary>
+    /// <param name="tokenStore">The token store.</param>
+    /// <param name="tokenClient">The token client.</param>
+    internal TokenService(ITokenStore tokenStore, TokenClient tokenClient) 
     {
         _tokenStore = tokenStore;
         _tokenClient = tokenClient;
     }
 
-    public string? CurrentSessionId { get; set; }
+    /// <summary>
+    /// Gets or sets the current session identifier.
+    /// </summary>
+    /// <value>
+    /// The current session identifier.
+    /// </value>
+    internal string? CurrentSessionId { get; set; }
 
-    public async Task<string> SaveTokenForNewSessionAsync(TokenValidatedContext tokenContext)
+    /// <summary>
+    /// Saves a token for a new session and generates a new unique session id asynchronous.
+    /// </summary>
+    /// <param name="tokenResponse">The token response from authorization server.</param>
+    /// <returns>
+    /// A new unique session id.
+    /// </returns>
+    internal async Task<string> SaveTokenForNewSessionAsync(OpenIdConnectMessage tokenResponse)
     {
         // Create a new guid for the new session
         string sessionId = Guid.NewGuid().ToString();
-        await SaveOrUpdateTokenAsync (sessionId, tokenContext);
+        await SaveOrUpdateTokenAsync (sessionId, tokenResponse);
         return sessionId;
     }
 
-    public async Task SaveOrUpdateTokenAsync(string sessionId, TokenValidatedContext tokenContext)
+    /// <summary>
+    /// Saves or updates a token for an existing session asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="tokenResponse">The token response from authorisation server.</param>
+    internal async Task SaveOrUpdateTokenAsync(string sessionId, OpenIdConnectMessage tokenResponse)
     {
-        string idToken = tokenContext.TokenEndpointResponse.IdToken;
-        string accessToken = tokenContext.TokenEndpointResponse.AccessToken;
-        string refreshToken = tokenContext.TokenEndpointResponse.RefreshToken;
-        DateTimeOffset expiresAt = new DateTimeOffset(DateTime.Now).AddSeconds(Convert.ToInt32(tokenContext.TokenEndpointResponse.ExpiresIn));
+        string idToken = tokenResponse.IdToken;
+        string accessToken = tokenResponse.AccessToken;
+        string refreshToken = tokenResponse.RefreshToken;
+        DateTimeOffset expiresAt = new DateTimeOffset(DateTime.Now).AddSeconds(Convert.ToInt32(tokenResponse.ExpiresIn));
 
         await _tokenStore.SaveOrUpdateTokensAsync(sessionId, idToken, accessToken, refreshToken, expiresAt);
     }
 
-    public async Task<string?> GetAccessTokenAsync()
+    /// <summary>
+    /// Gets the access token of the current session asynchronous.
+    /// </summary>
+    /// <remarks>
+    /// If no session is available the logic falls back to the client credentials flow.
+    /// </remarks>
+    /// <returns>The access token.</returns>
+    internal async Task<string?> GetAccessTokenAsync()
     {
         if(CurrentSessionId == null)
         {
-            var tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
+            ClientCredentialsTokenResponse? tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
+            if (tokenResponse == null) throw new InvalidOperationException("Could not retrieve token via client credentials.");
             return tokenResponse.AccessToken;
         }
 
-        TokenRecord? tokenRecord = await _tokenStore.GetTokensAsync(CurrentSessionId);
+        TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);
 
         if(tokenRecord == null)
         {
-            throw new InvalidOperationException("No token for session with id  " + CurrentSessionId + " available");
+            throw new InvalidOperationException("No token for session current session available");
         }
 
         if(IsExpired(tokenRecord))
         {
             // Refresh the token
-            TokenRefreshResponse tokenRefresh = await _tokenClient.RefreshAsync(tokenRecord.RefreshToken);
+            TokenRefreshResponse? tokenRefresh = await _tokenClient.RefreshAsync(tokenRecord.RefreshToken);
 
             if(tokenRefresh == null)
             {
@@ -74,15 +111,19 @@ internal class TokenService
         }
     }
 
-    public async Task<IEnumerable<Claim>> GetIdentityClaimsAsync()
+    /// <summary>
+    /// Gets the identity claims of the current session asynchronous.
+    /// </summary>
+    /// <returns></returns>
+    internal async Task<IEnumerable<Claim>?> GetIdentityClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 
-        TokenRecord? tokenRecord = await _tokenStore.GetTokensAsync(CurrentSessionId);
+        TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);
 
         if (tokenRecord == null)
         {
-            throw new InvalidOperationException("No token for user " + CurrentSessionId + " available");
+            throw new InvalidOperationException("No tokens for current session available");
         }
 
         JwtSecurityToken idToken = new JwtSecurityTokenHandler().ReadJwtToken(tokenRecord.IdToken);
@@ -90,6 +131,13 @@ internal class TokenService
         return idToken.Claims;
     }
 
+    /// <summary>
+    /// Determines whether the specified tokent record is expired.
+    /// </summary>
+    /// <param name="tokentRecord">The tokent record.</param>
+    /// <returns>
+    ///   <c>true</c> if the specified tokent record is expired; otherwise, <c>false</c>.
+    /// </returns>
     private bool IsExpired(TokenRecord tokentRecord)
     {
         return tokentRecord.ExpiresAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds < 30;

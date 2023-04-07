@@ -5,9 +5,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Fancy.ResourceLinker.Gateway.AntiForgery;
 
+/// <summary>
+/// Class with helper methods to set up anti forgery feature.
+/// </summary>
 internal static class GatewayAntiForgery
 {
-    public static void AddGatewayAntiForgery(IServiceCollection services)
+    /// <summary>
+    /// Adds the gateway anti forgery service to the ioc container.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    internal static void AddGatewayAntiForgery(IServiceCollection services)
     {
         services.AddAntiforgery(setup =>
         {
@@ -15,68 +22,69 @@ internal static class GatewayAntiForgery
         });
     }
 
-    public static void UseGatewayAntiForgery(WebApplication app)
+    /// <summary>
+    /// Adds the gateway anti forgery middleware to the middleware pipeline.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    internal static void UseGatewayAntiForgery(WebApplication webApp)
     {
-        app.UseXsrfCookieCreator();
-        app.UseXsrfCookieChecks();
+        webApp.UseXsrfCookieCreator();
+        webApp.UseXsrfHeaderChecks();
     }
 
-    private static void UseXsrfCookieCreator(this WebApplication app)
+    /// <summary>
+    /// Adds a middleware to create XSRF cookies.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    private static void UseXsrfCookieCreator(this WebApplication webApp)
     {
-        app.Use(async (ctx, next) =>
+        webApp.Use((context, next) =>
         {
-            var antiforgery = app.Services.GetService<IAntiforgery>();
+            IAntiforgery? antiforgery = webApp.Services.GetService<IAntiforgery>();
 
             if (antiforgery == null)
             {
-                throw new Exception("IAntiforgery service exptected! Call AddGatewayAntiForgery to add required services!");
+                throw new InvalidOperationException("IAntiforgery service exptected! Call 'AddAntiForgery' on the gateway builder to add required services!");
             }
 
-            var tokens = antiforgery!.GetAndStoreTokens(ctx);
+            AntiforgeryTokenSet tokens = antiforgery!.GetAndStoreTokens(context);
 
             if (tokens.RequestToken == null)
             {
-                throw new Exception("token exptected!");
+                throw new InvalidOperationException("Antiforgery request token exptected!");
             }
 
-            ctx.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken,
-                        new CookieOptions() { HttpOnly = false });
+            // Add a XSRF Cookie to the response
+            context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken, new CookieOptions() { HttpOnly = false });
 
-            await next(ctx);
+            return next(context);
         });
     }
 
-    private static void UseXsrfCookieChecks(this WebApplication app)
+    /// <summary>
+    /// Adds a middleware to check XSRF headers.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    private static void UseXsrfHeaderChecks(this WebApplication webApp)
     {
-        //var config = app.Services.GetRequiredService<GatewayConfig>();
-        //var apiConfigs = config.ApiConfigs;
-
-        app.Use(async (ctx, next) =>
+        webApp.Use(async (context, next) =>
         {
-            var antiforgery = app.Services.GetService<IAntiforgery>();
+            IAntiforgery? antiforgery = webApp.Services.GetService<IAntiforgery>();
 
             if (antiforgery == null)
             {
-                throw new Exception("IAntiforgery service exptected!");
+                throw new InvalidOperationException("IAntiforgery service exptected! Call 'AddAntiForgery' on the gateway builder to add required services!");
             }
 
-            var currentUrl = ctx.Request.Path.ToString().ToLower();
-            //if (apiConfigs.Any(c => currentUrl.StartsWith(c.ApiPath)))
-            // ToDo: Find a better way when to use antiforgery by using routing configuration and local endpoints
-            if (currentUrl.StartsWith("/api"))
+            if (!await antiforgery.IsRequestValidAsync(context))
             {
-                if (!await antiforgery.IsRequestValidAsync(ctx))
-                {
-                    ctx.Response.StatusCode = 400;
-                    await ctx.Response.WriteAsJsonAsync(new
-                    {
-                        Error = "XSRF token validadation failed"
-                    });
-                    return;
-                }
+                // Return an error response
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsJsonAsync(new { Error = "XSRF token validadation failed" });
+                return;
             }
 
-            await next(ctx);
+            await next(context);
         });
     }
 }

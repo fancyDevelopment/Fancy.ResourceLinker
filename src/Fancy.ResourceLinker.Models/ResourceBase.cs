@@ -16,9 +16,12 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// </summary>
     public ResourceBase()
     {
+        // Initialize metadata dictionaries
         Links = new Dictionary<string, ResourceLink>();
         Actions = new Dictionary<string, ResourceAction>();
         Sockets = new Dictionary<string, ResourcSocket>();
+
+        // Get all static (compile time) properties of this type
         StaticKeys = GetType()
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                      .Where(p => p.GetIndexParameters().Length == 0)
@@ -115,7 +118,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <value>
     /// The static keys.
     /// </value>
-    internal List<string> StaticKeys { get;  }
+    internal List<string> StaticKeys { get; }
 
     /// <summary>
     /// Gets or sets the <see cref="System.Object"/> with the specified key.
@@ -152,9 +155,9 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
-    /// Adds the link.
+    /// Adds a link.
     /// </summary>
-    /// <param name="rel">The rel.</param>
+    /// <param name="rel">The relation.</param>
     /// <param name="href">The href.</param>
     public void AddLink(string rel, string href)
     {
@@ -162,9 +165,9 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
-    /// Adds the action.
+    /// Adds an action.
     /// </summary>
-    /// <param name="rel">The relative.</param>
+    /// <param name="rel">The relation.</param>
     /// <param name="method">The method.</param>
     /// <param name="href">The URL to the action.</param>
     public void AddAction(string rel, string method, string href)
@@ -173,15 +176,26 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
-    /// Adds the hub.
+    /// Adds a socket.
     /// </summary>
-    /// <param name="rel">The relative.</param>
+    /// <param name="rel">The relation.</param>
     /// <param name="href">The href.</param>
     /// <param name="method">The method.</param>
     /// <param name="token">The token.</param>
     public void AddSocket(string rel, string href, string method, string token)
     {
         Sockets.Add(rel, new ResourcSocket(href, method, token));
+    }
+
+    /// <summary>
+    /// Adds a socket.
+    /// </summary>
+    /// <param name="rel">The relation.</param>
+    /// <param name="href">The href.</param>
+    /// <param name="method">The method.</param>
+    public void AddSocket(string rel, string href, string method)
+    {
+        Sockets.Add(rel, new ResourcSocket(href, method));
     }
 
     /// <summary>

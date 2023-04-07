@@ -1,45 +1,110 @@
-﻿using Microsoft.Extensions.Options;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-public class TokenRefreshResponse
+/// <summary>
+/// Class to hold the result of a token refresh response.
+/// </summary>
+internal class TokenRefreshResponse
 {
+    /// <summary>
+    /// Gets or sets the identifier token.
+    /// </summary>
+    /// <value>
+    /// The identifier token.
+    /// </value>
     [JsonPropertyName("id_token")]
     public string IdToken { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the access token.
+    /// </summary>
+    /// <value>
+    /// The access token.
+    /// </value>
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the refresh token.
+    /// </summary>
+    /// <value>
+    /// The refresh token.
+    /// </value>
     [JsonPropertyName("refresh_token")]
     public string RefreshToken { get; set; } = "";
-    
+
+    /// <summary>
+    /// Gets or sets the expires in.
+    /// </summary>
+    /// <value>
+    /// The expires in.
+    /// </value>
     [JsonPropertyName("expires_in")]
     public long ExpiresIn { get; set; }
 }
 
-public class ClientCredentialsTokenResponse
+/// <summary>
+/// Class to hold the result of a client credentials token response.
+/// </summary>
+internal class ClientCredentialsTokenResponse
 {
+    /// <summary>
+    /// Gets or sets the access token.
+    /// </summary>
+    /// <value>
+    /// The access token.
+    /// </value>
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the expires in.
+    /// </summary>
+    /// <value>
+    /// The expires in.
+    /// </value>
     [JsonPropertyName("expires_in")]
     public long ExpiresIn { get; set; }
 }
 
-public class TokenClient
+/// <summary>
+/// A token client with implementation of typical token logic.
+/// </summary>
+internal class TokenClient
 {
+    /// <summary>
+    /// The authentication settings.
+    /// </summary>
     private readonly GatewayAuthenticationSettings _settings;
+
+    /// <summary>
+    /// The discovery document service.
+    /// </summary>
     private readonly DiscoveryDocumentService _discoveryDocumentService;
-    private DiscoveryDocument _discoveryDocument;
-    
+
+    /// <summary>
+    /// The discovery document.
+    /// </summary>
+    private DiscoveryDocument? _discoveryDocument;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TokenClient"/> class.
+    /// </summary>
+    /// <param name="settings">The authentication settings.</param>
+    /// <param name="discoveryDocumentService">The discovery document service.</param>
     public TokenClient(GatewayAuthenticationSettings settings, DiscoveryDocumentService discoveryDocumentService)
     {
         _settings = settings;
         _discoveryDocumentService = discoveryDocumentService;
     }
 
+    /// <summary>
+    /// Executes a token refresh the asynchronous.
+    /// </summary>
+    /// <param name="refreshToken">The refresh token.</param>
+    /// <returns>The token refresh response.</returns>
     public async Task<TokenRefreshResponse?> RefreshAsync(string refreshToken)
     {
         DiscoveryDocument discoveryDocument = await GetDiscoveryDocumentAsync();
@@ -65,15 +130,16 @@ public class TokenClient
 
         if (!response.IsSuccessStatusCode)
         {
-            string responseContent = await response.Content.ReadAsStringAsync();
             return null;
         }
 
-        TokenRefreshResponse result = await response.Content.ReadFromJsonAsync<TokenRefreshResponse>();
-
-        return result;
+        return await response.Content.ReadFromJsonAsync<TokenRefreshResponse>();
     }
 
+    /// <summary>
+    /// Gets thae token via client credentials flow asynchronous.
+    /// </summary>
+    /// <returns>The client credentials flow token response.</returns>
     public async Task<ClientCredentialsTokenResponse?> GetTokenViaClientCredentialsAsync()
     {
         DiscoveryDocument discoveryDocument = await GetDiscoveryDocumentAsync();
@@ -83,7 +149,7 @@ public class TokenClient
             { "grant_type", "client_credentials" },
             { "client_id", _settings.ClientId },
             { "client_secret", _settings.ClientSecret },
-            { "scope", _settings.ClientCredentialsScope }
+            { "scope", _settings.ClientCredentialsScopes }
         };
 
         HttpClient httpClient = new HttpClient();
@@ -97,18 +163,18 @@ public class TokenClient
 
         HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        var message = await response.Content.ReadAsStringAsync();
-
         if (!response.IsSuccessStatusCode)
         {
             return null;
         }
 
-        ClientCredentialsTokenResponse result = await response.Content.ReadFromJsonAsync<ClientCredentialsTokenResponse>();
-
-        return result;
+        return await response.Content.ReadFromJsonAsync<ClientCredentialsTokenResponse>();
     }
 
+    /// <summary>
+    /// Gets the discovery document asynchronous.
+    /// </summary>
+    /// <returns>The discovery document.</returns>
     private async Task<DiscoveryDocument> GetDiscoveryDocumentAsync()
     {
         if (_discoveryDocument == null)

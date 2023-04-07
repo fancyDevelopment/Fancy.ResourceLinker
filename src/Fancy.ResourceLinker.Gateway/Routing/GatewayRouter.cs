@@ -4,7 +4,6 @@ using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +11,9 @@ using Yarp.ReverseProxy.Forwarder;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
+/// <summary>
+/// A class to provide routing functionality for manual routing implementations.
+/// </summary>
 public class GatewayRouter
 {
     /// <summary>
@@ -19,29 +21,61 @@ public class GatewayRouter
     /// </summary>
     private readonly HttpClient _httpClient = new HttpClient();
 
+    /// <summary>
+    /// The forwarder request configuration.
+    /// </summary>
     private readonly ForwarderRequestConfig _forwarderRequestConfig = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(100) };
+
+    /// <summary>
+    /// The forwarder transformer.
+    /// </summary>
     private readonly HttpTransformer _forwarderTransformer = new GatewayForwarderHttpTransformer();
 
     /// <summary>
     /// The serializer options used to deserialize received json.
     /// </summary>
-    private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions();
+    private readonly JsonSerializerOptions _serializerOptions;
 
+    /// <summary>
+    /// The routing settings.
+    /// </summary>
     private readonly GatewayRoutingSettings _settings;
+
+    /// <summary>
+    /// The forwarder.
+    /// </summary>
     private readonly IHttpForwarder _forwarder;
-    private readonly TokenService? _tokenService;
+
+    /// <summary>
+    /// The resource cache.
+    /// </summary>
     private readonly IResourceCache _resourceCache;
 
-    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IServiceProvider serviceProvider, IResourceCache resourceCache)
+    /// <summary>
+    /// The token service.
+    /// </summary>
+    private readonly TokenService? _tokenService;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayRouter"/> class.
+    /// </summary>
+    /// <param name="settings">The settings.</param>
+    /// <param name="forwarder">The forwarder.</param>
+    /// <param name="resourceCache">The resource cache.</param>
+    /// <param name="serviceProvider">The service provider.</param>
+    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IResourceCache resourceCache, IServiceProvider serviceProvider)
     {
         _settings = settings;
         _forwarder = forwarder;
         _resourceCache = resourceCache;
+
+        // Get the optional token service
+        _tokenService = serviceProvider.GetService<TokenService>();
+
+        // Set up serializer options
+        _serializerOptions = new JsonSerializerOptions();
         _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         _serializerOptions.AddResourceConverter();
-
-        // Check if a token service is available
-        _tokenService = serviceProvider.GetService<TokenService>();
     }
 
     /// <summary>
@@ -50,7 +84,7 @@ public class GatewayRouter
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri of the data to get.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private async Task<TResource> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
+    private async Task<TResource?> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -63,6 +97,7 @@ public class GatewayRouter
 
         if(sendAccessToken)
         {
+            if (_tokenService == null) throw new InvalidOperationException($"If '{nameof(sendAccessToken)}' is 'true', gateway authentication must be configured.");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
         }
 
@@ -82,15 +117,15 @@ public class GatewayRouter
     }
 
     /// <summary>
-    /// Get data from a microservice specified by its key of a provided endpoint and deserializes it into a given type.
+    /// Get data from a microservice specified by its key of a provided route and deserializes it into a given type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="routeKey">The key of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource> GetAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
+    public Task<TResource?> GetAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
     {
-        Uri requestUri = CombineUris(_settings.Routes[routeKey].BaseUrl.AbsoluteUri, relativeUrl);
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return GetAsync<TResource>(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
     }
 
@@ -104,12 +139,12 @@ public class GatewayRouter
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public async Task<TResource> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, bool sendAccessToken) where TResource : ResourceBase
+    public async Task<TResource?> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, bool sendAccessToken) where TResource : ResourceBase
     {
         string cacheKey = requestUri.ToString();
 
         // Check if we can get the resource from cache
-        TResource data;
+        TResource? data;
         if (_resourceCache.TryRead(cacheKey, maxResourceAge, out data))
         {
             return data;
@@ -135,9 +170,9 @@ public class GatewayRouter
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public Task<TResource> GetCachedAsync<TResource>(string routeKey, string relativeUrl, TimeSpan maxResourceAge) where TResource : ResourceBase
+    public Task<TResource?> GetCachedAsync<TResource>(string routeKey, string relativeUrl, TimeSpan maxResourceAge) where TResource : ResourceBase
     {
-        Uri requestUri = CombineUris(_settings.Routes[routeKey].BaseUrl.AbsoluteUri, relativeUrl);
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return GetCachedAsync<TResource>(requestUri, maxResourceAge, _settings.Routes[routeKey].EnforceAuthentication);
     }
 
@@ -162,7 +197,7 @@ public class GatewayRouter
 
         proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
 
-        Uri requestUri = CombineUris(_settings.Routes[routeKey].BaseUrl.AbsoluteUri, relativeUrl);
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
 
         proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());
         proxyRequest.Headers.Host = requestUri.Authority;
@@ -170,6 +205,7 @@ public class GatewayRouter
 
         if (_settings.Routes[routeKey].EnforceAuthentication)
         {
+            if (_tokenService == null) throw new InvalidOperationException($"If 'EnforceAuthentication' is 'true' for route key '{routeKey}', gateway authentication must be configured.");
             proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
         }
 
@@ -180,7 +216,7 @@ public class GatewayRouter
             if (proxyResponse.Content.Headers.ContentLength > 0)
             {
                 string content = await proxyResponse.Content.ReadAsStringAsync();
-                string contentType = proxyResponse.Content.Headers.ContentType?.MediaType;
+                string? contentType = proxyResponse.Content.Headers.ContentType?.MediaType;
                 return new ContentResult { StatusCode = (int)proxyResponse.StatusCode, Content = content, ContentType = contentType };
             }
             else
@@ -216,9 +252,14 @@ public class GatewayRouter
         return ProxyAsync(httpContext, routeKey, httpContext.Request.Path + httpContext.Request.QueryString);
     }
 
+    /// <summary>
+    /// Forwards an http context asynchronous.
+    /// </summary>
+    /// <param name="httpContext">The HTTP context.</param>
+    /// <param name="routeKey">The route key.</param>
     public async Task ForwardAsync(HttpContext httpContext, string routeKey)
     {
-        string targetUrl = _settings.Routes[routeKey].BaseUrl.AbsoluteUri;
+        string targetUrl = GetBaseUrl(routeKey);
         httpContext.Items[GatewayForwarderHttpTransformer.SendAccessTokenItemKey] = _settings.Routes[routeKey].EnforceAuthentication;
 
         // Forward request to microservice
@@ -227,10 +268,22 @@ public class GatewayRouter
         // Check if the operation was successful
         if (error != ForwarderError.None)
         {
-            IForwarderErrorFeature errorFeature = httpContext.GetForwarderErrorFeature();
-            Exception exception = errorFeature.Exception;
-            throw exception;
+            IForwarderErrorFeature? errorFeature = httpContext.GetForwarderErrorFeature();
+            Exception? exception = errorFeature?.Exception;
+            throw exception ?? throw new Exception("Error on forwarding");
         }
+    }
+
+    /// <summary>
+    /// Gets the base URL of a routing key.
+    /// </summary>
+    /// <param name="routeKey">The route key.</param>
+    /// <returns>The base url</returns>
+    private string GetBaseUrl(string routeKey)
+    {
+        Uri? baseUrl = _settings.Routes[routeKey].BaseUrl;
+        if (baseUrl == null) throw new InvalidOperationException($"'BaseUrl' is required for route with key '{routeKey}'");
+        return baseUrl.AbsoluteUri;
     }
 
     /// <summary>
@@ -239,7 +292,7 @@ public class GatewayRouter
     /// <param name="baseUri">The base URI.</param>
     /// <param name="relativeUri">The relative URI.</param>
     /// <returns>The combined uri.</returns>
-    internal Uri CombineUris(string baseUri, string relativeUri)
+    private Uri CombineUris(string baseUri, string relativeUri)
     {
         baseUri = baseUri.Trim();
         relativeUri = relativeUri.Trim();

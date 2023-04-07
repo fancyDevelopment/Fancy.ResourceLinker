@@ -12,7 +12,7 @@ public class InMemoryResourceCache : IResourceCache
     /// <summary>
     /// The cache dictonary which holds all keys and accoarding cache entries.
     /// </summary>
-    private Dictionary<string, Tuple<DateTime, object>> _cache = new Dictionary<string, Tuple<DateTime, object>>();
+    private Dictionary<string, Tuple<DateTime, object?>> _cache = new Dictionary<string, Tuple<DateTime, object?>>();
 
     /// <summary>
     /// Writes a resource with the specified key to the cache.
@@ -20,9 +20,9 @@ public class InMemoryResourceCache : IResourceCache
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="key">The key to save the resource under.</param>
     /// <param name="resource">The resource instance to save.</param>
-    public void Write<TResource>(string key, TResource resource) where TResource : ResourceBase
+    public void Write<TResource>(string key, TResource? resource) where TResource : ResourceBase
     {
-        _cache[key] = new Tuple<DateTime, object>(DateTime.Now, resource);
+        _cache[key] = new Tuple<DateTime, object?>(DateTime.Now, resource);
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public class InMemoryResourceCache : IResourceCache
     /// <returns>
     /// True if the cache was able to read and provide a valid resource instance; otherwise, false.
     /// </returns>
-    public bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource resource) where TResource : ResourceBase
+    public bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource? resource) where TResource : ResourceBase
     {
         resource = null;
 
@@ -47,7 +47,7 @@ public class InMemoryResourceCache : IResourceCache
             // Check if the item within the cahe is not too old
             if (DateTime.Now.Subtract(cacheEntry.Item1) < maxResourceAge)
             {
-                resource = (TResource)cacheEntry.Item2;
+                resource = (TResource?)cacheEntry.Item2;
                 return true;
             }
         }

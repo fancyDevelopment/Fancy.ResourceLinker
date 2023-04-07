@@ -10,6 +10,18 @@ public class ResourcSocket
     /// </summary>
     /// <param name="href">The href.</param>
     /// <param name="method">The method.</param>
+    public ResourcSocket(string href, string method)
+    {
+        Href = href;
+        Method = method;
+        Token = null;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ResourcSocket" /> class.
+    /// </summary>
+    /// <param name="href">The href.</param>
+    /// <param name="method">The method.</param>
     /// <param name="token">The token.</param>
     public ResourcSocket(string href, string method, string token)
     {
@@ -40,5 +52,5 @@ public class ResourcSocket
     /// <value>
     /// The token.
     /// </value>
-    public string Token { get; set; }
+    public string? Token { get; set; }
 }
