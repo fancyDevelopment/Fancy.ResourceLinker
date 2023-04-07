@@ -24,7 +24,7 @@ internal class TokenService
     /// </summary>
     /// <param name="tokenStore">The token store.</param>
     /// <param name="tokenClient">The token client.</param>
-    internal TokenService(ITokenStore tokenStore, TokenClient tokenClient) 
+    public TokenService(ITokenStore tokenStore, TokenClient tokenClient) 
     {
         _tokenStore = tokenStore;
         _tokenClient = tokenClient;
@@ -63,7 +63,7 @@ internal class TokenService
         string idToken = tokenResponse.IdToken;
         string accessToken = tokenResponse.AccessToken;
         string refreshToken = tokenResponse.RefreshToken;
-        DateTimeOffset expiresAt = new DateTimeOffset(DateTime.Now).AddSeconds(Convert.ToInt32(tokenResponse.ExpiresIn));
+        DateTime expiresAt = DateTime.UtcNow.AddSeconds(Convert.ToInt32(tokenResponse.ExpiresIn));
 
         await _tokenStore.SaveOrUpdateTokensAsync(sessionId, idToken, accessToken, refreshToken, expiresAt);
     }
@@ -101,7 +101,7 @@ internal class TokenService
                 throw new TokenRefreshException();
             }
 
-            DateTimeOffset expiresAt = new DateTimeOffset(DateTime.Now).AddSeconds(Convert.ToInt32(tokenRefresh.ExpiresIn));
+            DateTime expiresAt = DateTime.UtcNow.AddSeconds(Convert.ToInt32(tokenRefresh.ExpiresIn));
             await _tokenStore.SaveOrUpdateTokensAsync(CurrentSessionId, tokenRefresh.IdToken, tokenRefresh.AccessToken, tokenRefresh.RefreshToken, expiresAt);
             return tokenRefresh.AccessToken;
         }
@@ -140,6 +140,6 @@ internal class TokenService
     /// </returns>
     private bool IsExpired(TokenRecord tokentRecord)
     {
-        return tokentRecord.ExpiresAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds < 30;
+        return tokentRecord.ExpiresAt.Subtract(DateTime.UtcNow).TotalSeconds < 30;
     }
 }

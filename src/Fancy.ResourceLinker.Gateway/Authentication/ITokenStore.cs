@@ -14,7 +14,7 @@ public interface ITokenStore
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiration">The expiration.</param>
     /// <returns>A task indicating the completion of the asynchronous operation.</returns>
-    Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt);
+    Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt);
 
     /// <summary>
     /// Gets the token record for a provided session asynchronous.
@@ -24,4 +24,10 @@ public interface ITokenStore
     /// A token record if available.
     /// </returns>
     Task<TokenRecord?> GetTokenRecordAsync(string sessionId);
+
+    /// <summary>
+    /// Cleans up the expired token records asynchronous.
+    /// </summary>
+    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    Task CleanupExpiredTokenRecordsAsync();
 }

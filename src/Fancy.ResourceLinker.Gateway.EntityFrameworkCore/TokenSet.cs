@@ -15,7 +15,7 @@ internal class TokenSet
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiresAt">The expires at.</param>
-    public TokenSet(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt)
+    public TokenSet(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt)
     {
         SessionId = sessionId;
         IdToken = idToken;
@@ -64,5 +64,5 @@ internal class TokenSet
     /// <value>
     /// The expires at.
     /// </value>
-    public DateTimeOffset ExpiresAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
 }

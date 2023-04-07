@@ -20,7 +20,7 @@ internal class InMemoryTokenStore : ITokenStore
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiration">The expiration.</param>
     /// <returns>A task indicating the completion of the asynchronous operation.</returns>
-    public Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiration)
+    public Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiration)
     {
         _tokens[sessionId] = new TokenRecord(sessionId, idToken, accessToken, refreshToken, expiration );
         return Task.CompletedTask;
@@ -37,5 +37,23 @@ internal class InMemoryTokenStore : ITokenStore
     {
         if (_tokens.ContainsKey(sessionId)) return Task.FromResult<TokenRecord?>(_tokens[sessionId]);
         else return Task.FromResult<TokenRecord?>(null);
+    }
+
+    /// <summary>
+    /// Cleans up the expired token records asynchronous.
+    /// </summary>
+    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    public Task CleanupExpiredTokenRecordsAsync()
+    {
+        Dictionary<string, TokenRecord> validRecords = new Dictionary<string, TokenRecord> ();
+
+        foreach(var record in _tokens.Values)
+        {
+            if(record.ExpiresAt > DateTime.UtcNow) validRecords.Add(record.SessionId, record);
+        }
+
+        _tokens = validRecords;
+
+        return Task.CompletedTask;
     }
 }

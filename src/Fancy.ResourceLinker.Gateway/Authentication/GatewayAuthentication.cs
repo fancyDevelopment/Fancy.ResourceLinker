@@ -19,6 +19,11 @@ namespace Fancy.ResourceLinker.Gateway.Authentication;
 internal static class GatewayAuthentication
 {
     /// <summary>
+    /// The settings.
+    /// </summary>
+    private static GatewayAuthenticationSettings _settings = null!;
+
+    /// <summary>
     /// The authentication policy name.
     /// </summary>
     internal static readonly string AuthenticationPolicyName = "GatewayEnforceAuthentication";
@@ -30,9 +35,11 @@ internal static class GatewayAuthentication
     /// <param name="settings">The settings.</param>
     internal static void AddGatewayAuthentication(IServiceCollection services, GatewayAuthenticationSettings settings)
     {
+        _settings = settings;
         services.AddSingleton<DiscoveryDocumentService>();
         services.AddSingleton<TokenClient>();
         services.AddScoped<TokenService>();
+        services.AddHostedService<TokenCleanupBackgroundService>();
 
         services.AddAuthorization(options =>
         {
@@ -64,7 +71,7 @@ internal static class GatewayAuthentication
             options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
             options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
             options.RequireHttpsMetadata = false;
-            //options.TokenValidationParameters.NameClaimType = settings.UniqueIdentifierClaimType;
+            options.TokenValidationParameters.NameClaimType = settings.UniqueIdentifierClaimType;
 
             foreach (string scope in settings.AuthorizationCodeScopes.Split(' '))
             {
@@ -85,10 +92,13 @@ internal static class GatewayAuthentication
             {
                 string? tokenSessionId = context.HttpContext.Items["TokenSessionId"] as string;
 
-                if (!string.IsNullOrWhiteSpace(tokenSessionId))
+                if (!string.IsNullOrWhiteSpace(tokenSessionId) && context.Principal != null)
                 {
+                    var sessionIdClaim = new Claim("TokenSessionId", tokenSessionId);
+                    var uniqueNameClaim = context.Principal.Claims.Single(c => c.Type == settings.UniqueIdentifierClaimType);
+
                     // Setup a new default identity which only contians the token session id
-                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("TokenSessionId", tokenSessionId) }, context.Principal?.Identity?.AuthenticationType));
+                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { sessionIdClaim, uniqueNameClaim }, context.Principal?.Identity?.AuthenticationType, settings.UniqueIdentifierClaimType, null));
                 }
 
                 return Task.CompletedTask;
@@ -121,14 +131,16 @@ internal static class GatewayAuthentication
         // Custom Middleware to read current user into token service
         app.Use(async (context, next) =>
         {
-            TokenService? tokenService = context.RequestServices.GetService<TokenService>();
+            TokenService tokenService = context.RequestServices.GetRequiredService<TokenService>();
+            string? currentSessionId = context.User.Claims.SingleOrDefault(c => c.Type == "TokenSessionId")?.Value;
 
-            if (tokenService != null)
+            // Add the identity from the token only if we still have a valid session
+            if (!string.IsNullOrEmpty(currentSessionId))
             {
-                tokenService.CurrentSessionId = context.User.Claims.SingleOrDefault(c => c.Type == "TokenSessionId")?.Value;
+                tokenService.CurrentSessionId = currentSessionId;
                 
                 // Add the identity from the current valid token
-                context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetIdentityClaimsAsync(), "Gateway"));
+                context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetIdentityClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, null));
             }
 
             try

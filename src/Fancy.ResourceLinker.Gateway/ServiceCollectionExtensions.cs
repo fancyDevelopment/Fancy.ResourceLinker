@@ -146,6 +146,17 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Adds the authentication feature to the gateway with the default in memory token store.
+    /// </summary>
+    /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder AddAuthentication(this ConfiguredGatewayBuilder configuredGatewayBuilder)
+    {
+        AddAuthentication(configuredGatewayBuilder, options => options.UseInMemoryTokenStore());
+        return configuredGatewayBuilder;
+    }
+
+    /// <summary>
     /// Adds the authentication feature to the gateway.
     /// </summary>
     /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
@@ -163,6 +174,17 @@ public static class ServiceCollectionExtensions
 
         GatewayAuthentication.AddGatewayAuthentication(configuredGatewayBuilder.Services, configuredGatewayBuilder.Settings.Authentication);
         buildOptions(new GatewayAuthenticationBuilder(configuredGatewayBuilder.Services));
+        return configuredGatewayBuilder;
+    }
+
+    /// <summary>
+    /// Adds the routing feature to the gateway with the default in memory configuration.
+    /// </summary>
+    /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder AddRouting(this ConfiguredGatewayBuilder configuredGatewayBuilder)
+    {
+        AddRouting(configuredGatewayBuilder, options => options.UseInMemoryResourceCache());
         return configuredGatewayBuilder;
     }
 

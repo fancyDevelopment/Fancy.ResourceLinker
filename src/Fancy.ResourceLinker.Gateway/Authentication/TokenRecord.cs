@@ -13,7 +13,7 @@ public class TokenRecord
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiresAt">The expires at.</param>
-    public TokenRecord(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt)
+    public TokenRecord(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt)
     {
         SessionId = sessionId;
         IdToken = idToken;
@@ -60,5 +60,5 @@ public class TokenRecord
     /// <value>
     /// The expires at.
     /// </value>
-    public DateTimeOffset ExpiresAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
 }

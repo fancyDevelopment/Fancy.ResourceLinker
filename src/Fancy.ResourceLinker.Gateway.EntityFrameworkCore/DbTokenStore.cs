@@ -47,7 +47,7 @@ internal class DbTokenStore : ITokenStore
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiresAt">The expires at.</param>
-    public async Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt)
+    public async Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt)
     {
         TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
 
@@ -65,5 +65,14 @@ internal class DbTokenStore : ITokenStore
         }
 
         await _dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Cleans up the expired token records asynchronous.
+    /// </summary>
+    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    public Task CleanupExpiredTokenRecordsAsync()
+    {
+        return _dbContext.TokenSets.Where(ts => ts.ExpiresAt < DateTime.UtcNow).ExecuteDeleteAsync();
     }
 }

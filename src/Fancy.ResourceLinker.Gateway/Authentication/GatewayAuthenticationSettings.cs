@@ -19,7 +19,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// The authority URL.
     /// </value>
-    public string Authority { get; set; } = "";
+    public string Authority { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the client identifier.
@@ -27,7 +27,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// The client identifier.
     /// </value>
-    public string ClientId { get; set; } = "";
+    public string ClientId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the client secret.
@@ -35,7 +35,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// The client secret.
     /// </value>
-    public string ClientSecret { get; set; } = "";
+    public string ClientSecret { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the scopes to request during an authorization code flow.
@@ -43,7 +43,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// The authorization code scopes.
     /// </value>
-    public string AuthorizationCodeScopes { get; set; } = "";
+    public string AuthorizationCodeScopes { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the scopes to request during an client credentials flow.
@@ -51,7 +51,15 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// The client credentials scopes.
     /// </value>
-    public string ClientCredentialsScopes { get; set; } = "";
+    public string ClientCredentialsScopes { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the type of the unique identifier claim.
+    /// </summary>
+    /// <value>
+    /// The type of the unique identifier claim.
+    /// </value>
+    public string UniqueIdentifierClaimType { get; set; } = string.Empty;
 
     /// <summary>
     /// Set whether the handler should go to user info endpoint of the authorization server to retrieve additional claims or not 
@@ -73,6 +81,11 @@ public class GatewayAuthenticationSettings
         if (string.IsNullOrEmpty(ClientId))
         {
             throw new InvalidOperationException("'ClientId' is required to be set within 'AuthenticationSettings'");
+        }
+
+        if (string.IsNullOrEmpty(UniqueIdentifierClaimType))
+        {
+            throw new InvalidOperationException("'UniqueIdentifierClaimType' is required to be set within 'AuthenticationSettings'");
         }
     }
 }
