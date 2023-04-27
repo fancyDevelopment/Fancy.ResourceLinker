@@ -75,13 +75,11 @@ internal class TokenService
     /// If no session is available the logic falls back to the client credentials flow.
     /// </remarks>
     /// <returns>The access token.</returns>
-    internal async Task<string?> GetAccessTokenAsync()
+    internal async Task<string> GetAccessTokenAsync()
     {
         if(CurrentSessionId == null)
         {
-            ClientCredentialsTokenResponse? tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
-            if (tokenResponse == null) throw new InvalidOperationException("Could not retrieve token via client credentials.");
-            return tokenResponse.AccessToken;
+            throw new InvalidOperationException("No session Id set, can not retrieve token");
         }
 
         TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);

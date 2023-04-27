@@ -13,7 +13,7 @@ public interface IResourceCache
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="key">The key to save the resource under.</param>
     /// <param name="resource">The resource instance to save.</param>
-    void Write<TResource>(string key, TResource? resource) where TResource : ResourceBase;
+    void Write<TResource>(string key, TResource resource) where TResource : ResourceBase;
 
     /// <summary>
     /// Tries to read a resource from the cache.

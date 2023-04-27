@@ -1,6 +1,7 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using System.ComponentModel.DataAnnotations;
 using Yarp.ReverseProxy.Configuration;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
@@ -17,8 +18,8 @@ internal static class GatewayRouting
     internal static void AddGatewayRouting(IServiceCollection services, GatewayRoutingSettings settings)
     {
         services.AddHttpForwarder();
-        services.AddSingleton(settings);
-        services.AddScoped<GatewayRouter>();
+        services.AddSingleton(settings); 
+        services.AddTransient<GatewayRouter>();
         services.AddReverseProxy().AddGatewayRoutes(settings);
     }
 
@@ -47,6 +48,9 @@ internal static class GatewayRouting
         // Add for each microservcie a route and a cluster
         foreach (KeyValuePair<string, RouteSettings> routeSettings in settings.Routes)
         {
+            // Only for routes with a path match an automatic gateway route is created
+            if (string.IsNullOrEmpty(routeSettings.Value.PathMatch)) continue;
+
             if (routeSettings.Value.BaseUrl == null) throw new InvalidOperationException($"A 'BaseUrl' must be set for route '{routeSettings.Key}'");
             routes.Add(new RouteConfig
             {

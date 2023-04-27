@@ -57,6 +57,11 @@ public class GatewayRouter
     private readonly TokenService? _tokenService;
 
     /// <summary>
+    /// The token client.
+    /// </summary>
+    private readonly TokenClient? _tokenClient;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="GatewayRouter"/> class.
     /// </summary>
     /// <param name="settings">The settings.</param>
@@ -69,8 +74,18 @@ public class GatewayRouter
         _forwarder = forwarder;
         _resourceCache = resourceCache;
 
-        // Get the optional token service
-        _tokenService = serviceProvider.GetService<TokenService>();
+        try
+        {
+            // Get the optional token service
+            _tokenService = serviceProvider.GetService<TokenService>();
+            _tokenClient = serviceProvider.GetService<TokenClient>();
+        }
+        catch(InvalidOperationException)
+        {
+            // The services are not available we assume there is no client scope and work with client credentials
+            _tokenService = null;
+            _tokenClient = null;
+        }
 
         // Set up serializer options
         _serializerOptions = new JsonSerializerOptions();
@@ -84,7 +99,7 @@ public class GatewayRouter
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri of the data to get.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private async Task<TResource?> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
+    private async Task<TResource> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -97,8 +112,25 @@ public class GatewayRouter
 
         if(sendAccessToken)
         {
-            if (_tokenService == null) throw new InvalidOperationException($"If '{nameof(sendAccessToken)}' is 'true', gateway authentication must be configured.");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
+            string accessToken;
+            if (_tokenService != null)
+            {
+                // A user session exists, get token from token service
+                accessToken = await _tokenService.GetAccessTokenAsync();
+            }
+            else if(_tokenClient != null)
+            {
+                // Fall back to client credentials token directly
+                ClientCredentialsTokenResponse? tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
+                if (tokenResponse == null) throw new InvalidOperationException("Could not retrieve token via client credentials.");
+                accessToken = tokenResponse.AccessToken;
+            }
+            else
+            {
+                throw new InvalidOperationException($"If '{nameof(sendAccessToken)}' is 'true', gateway authentication must be configured.");
+            }
+            
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
 
         // Get data from microservice
@@ -108,11 +140,11 @@ public class GatewayRouter
         if (responseMessage.StatusCode == System.Net.HttpStatusCode.OK)
         {
             string jsonResponse = await responseMessage.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<TResource>(jsonResponse, _serializerOptions);
+            return JsonSerializer.Deserialize<TResource>(jsonResponse, _serializerOptions) ?? throw new Exception("Error on deserialization of result");
         }
         else
         {
-            return default;
+            throw new Exception("No Content was provided by the server"); ;
         }
     }
 
@@ -123,7 +155,7 @@ public class GatewayRouter
     /// <param name="routeKey">The key of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource?> GetAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
+    public Task<TResource> GetAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return GetAsync<TResource>(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
@@ -139,7 +171,7 @@ public class GatewayRouter
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public async Task<TResource?> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, bool sendAccessToken) where TResource : ResourceBase
+    public async Task<TResource> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, bool sendAccessToken) where TResource : ResourceBase
     {
         string cacheKey = requestUri.ToString();
 
@@ -147,7 +179,7 @@ public class GatewayRouter
         TResource? data;
         if (_resourceCache.TryRead(cacheKey, maxResourceAge, out data))
         {
-            return data;
+            return data ?? throw new Exception("Error on reading item from cache");
         }
         else
         {
@@ -170,7 +202,7 @@ public class GatewayRouter
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public Task<TResource?> GetCachedAsync<TResource>(string routeKey, string relativeUrl, TimeSpan maxResourceAge) where TResource : ResourceBase
+    public Task<TResource> GetCachedAsync<TResource>(string routeKey, string relativeUrl, TimeSpan maxResourceAge) where TResource : ResourceBase
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return GetCachedAsync<TResource>(requestUri, maxResourceAge, _settings.Routes[routeKey].EnforceAuthentication);
@@ -205,8 +237,24 @@ public class GatewayRouter
 
         if (_settings.Routes[routeKey].EnforceAuthentication)
         {
-            if (_tokenService == null) throw new InvalidOperationException($"If 'EnforceAuthentication' is 'true' for route key '{routeKey}', gateway authentication must be configured.");
-            proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await _tokenService.GetAccessTokenAsync());
+            string accessToken;
+            if (_tokenService != null)
+            {
+                // A user session exists, get token from token service
+                accessToken = await _tokenService.GetAccessTokenAsync();
+            }
+            else if (_tokenClient != null)
+            {
+                // Fall back to client credentials token directly
+                ClientCredentialsTokenResponse? tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
+                if (tokenResponse == null) throw new InvalidOperationException("Could not retrieve token via client credentials.");
+                accessToken = tokenResponse.AccessToken;
+            }
+            else
+            {
+                throw new InvalidOperationException($"If 'EnforceAuthentication' is 'true', gateway authentication must be configured.");
+            }
+            proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
 
         HttpResponseMessage proxyResponse = await _httpClient.SendAsync(proxyRequest);

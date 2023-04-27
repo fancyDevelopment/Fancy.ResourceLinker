@@ -177,7 +177,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
         }
         else if(reader.TokenType == JsonTokenType.StartArray)
         {
-            List<object?> arrayValues = new List<object?>();
+            IList<object?> arrayValues = new List<object?>();
             while(reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndArray) break;

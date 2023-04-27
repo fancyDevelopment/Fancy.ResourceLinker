@@ -26,10 +26,14 @@ internal static class GatewayAntiForgery
     /// Adds the gateway anti forgery middleware to the middleware pipeline.
     /// </summary>
     /// <param name="webApp">The web application.</param>
-    internal static void UseGatewayAntiForgery(WebApplication webApp)
+    /// <param name="configurePolicy">The configure policy.</param>
+    internal static void UseGatewayAntiForgery(WebApplication webApp, Action<AntiForgeryBuilder>? configurePolicy = null)
     {
+        AntiForgeryBuilder antiForgeryBuilder = new AntiForgeryBuilder();
+        if(configurePolicy != null) configurePolicy(antiForgeryBuilder);
+
         webApp.UseXsrfCookieCreator();
-        webApp.UseXsrfHeaderChecks();
+        webApp.UseXsrfHeaderChecks(antiForgeryBuilder.Exclusions.ToArray());
     }
 
     /// <summary>
@@ -65,7 +69,7 @@ internal static class GatewayAntiForgery
     /// Adds a middleware to check XSRF headers.
     /// </summary>
     /// <param name="webApp">The web application.</param>
-    private static void UseXsrfHeaderChecks(this WebApplication webApp)
+    private static void UseXsrfHeaderChecks(this WebApplication webApp, string[] exclusions)
     {
         webApp.Use(async (context, next) =>
         {
@@ -76,12 +80,15 @@ internal static class GatewayAntiForgery
                 throw new InvalidOperationException("IAntiforgery service exptected! Call 'AddAntiForgery' on the gateway builder to add required services!");
             }
 
-            if (!await antiforgery.IsRequestValidAsync(context))
+            if (!exclusions.Any(excludedPath => context.Request.Path.Value?.StartsWith(excludedPath) ?? false))
             {
-                // Return an error response
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsJsonAsync(new { Error = "XSRF token validadation failed" });
-                return;
+                if (!await antiforgery.IsRequestValidAsync(context))
+                {
+                    // Return an error response
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsJsonAsync(new { Error = "XSRF token validadation failed" });
+                    return;
+                }
             }
 
             await next(context);

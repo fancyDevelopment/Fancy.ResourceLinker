@@ -9,7 +9,7 @@ namespace Fancy.ResourceLinker.Models;
 /// <summary>
 /// Base class of a resource which can be linked to other resources.
 /// </summary>
-public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object?>>
+public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object?>>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceBase"/> class.
@@ -152,6 +152,45 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
                 DynamicProperties[key] = value;
             }
         }
+    }
+
+    /// <summary>
+    /// Gets a specific key and tries to convert the value to an integer.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns>The value converted to integer.</returns>
+    public int GetAsInt(string key)
+    {
+        object? value = this[key];
+
+        if (value != null) return Convert.ToInt32(value);
+        else throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Gets a specific key and tries to convert the value to a double.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns>The value converted to double.</returns>
+    public double GetAsDouble(string key)
+    {
+        object? value = this[key];
+
+        if (value != null) return Convert.ToDouble(value);
+        else throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Gets a specific key and tries to cast the value to a list of dynamic resources.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns>The value casted to a list of dynamic resources.</returns>
+    public IEnumerable<DynamicResource?> GetAsResourceList(string key)
+    {
+        object? value = this[key];
+
+        if (value != null) return ((IEnumerable<object?>)value).Select(e => (DynamicResource?)e);
+        else throw new ArgumentNullException(nameof(value));
     }
 
     /// <summary>
