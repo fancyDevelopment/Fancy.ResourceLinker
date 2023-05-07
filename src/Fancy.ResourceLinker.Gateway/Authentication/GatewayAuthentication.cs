@@ -124,6 +124,7 @@ internal static class GatewayAuthentication
     /// <param name="webApp">The web application.</param>
     internal static void UseGatewayAuthentication(WebApplication app)
     {
+        // Add the default asp.net core middlewares for authentication and authorization
         app.UseAuthentication();
         app.UseAuthorization();
         //app.UseCookiePolicy();
@@ -140,7 +141,7 @@ internal static class GatewayAuthentication
                 tokenService.CurrentSessionId = currentSessionId;
                 
                 // Add the identity from the current valid token
-                context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetIdentityClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, null));
+                context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetAccessTokenClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, "roles"));
             }
 
             try

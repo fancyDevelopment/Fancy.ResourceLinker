@@ -82,12 +82,14 @@ internal static class GatewayAuthenticationEndpoints
         webApp.MapGet("/userinfo", async (TokenService tokenService) =>
         {
             IEnumerable<Claim>? claims = await tokenService.GetIdentityClaimsAsync();
-            Dictionary<string, string> dictionary = new Dictionary<string, string>();
-
+            
             if(claims == null)
             {
-                return Results.Unauthorized();
+                return Results.Content("undefined");
             }
+
+            // Map all claims to a dictionary
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
 
             foreach (var entry in claims)
             {

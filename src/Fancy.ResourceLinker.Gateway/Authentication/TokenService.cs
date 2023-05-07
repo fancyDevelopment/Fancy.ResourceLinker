@@ -110,6 +110,26 @@ internal class TokenService
     }
 
     /// <summary>
+    /// Gets the access token claims of the current session asynchronous.
+    /// </summary>
+    /// <returns></returns>
+    internal async Task<IEnumerable<Claim>?> GetAccessTokenClaimsAsync()
+    {
+        if (CurrentSessionId == null) return null;
+
+        TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);
+
+        if (tokenRecord == null)
+        {
+            throw new InvalidOperationException("No tokens for current session available");
+        }
+
+        JwtSecurityToken accessToken = new JwtSecurityTokenHandler().ReadJwtToken(tokenRecord.AccessToken);
+
+        return accessToken.Claims;
+    }
+
+    /// <summary>
     /// Gets the identity claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
