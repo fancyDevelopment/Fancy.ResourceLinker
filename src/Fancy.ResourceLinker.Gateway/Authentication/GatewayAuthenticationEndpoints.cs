@@ -3,21 +3,33 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-public static class GatewayAuthenticationEndpoints
+/// <summary>
+/// Class to add endpoints to the web application specific for the authentication feature.
+/// </summary>
+internal static class GatewayAuthenticationEndpoints
 {
-    public static void UseGatewayAuthenticationEndpoints(this WebApplication app)
+    /// <summary>
+    /// Adds the required gateway authentication endpoints to the middleware pipeline for the authentication feature.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    internal static void UseGatewayAuthenticationEndpoints(this WebApplication webApp)
     {
-        app.UseUserInfoEndpoint();
-        app.UseLoginEndpoint();
-        app.UseLogoutEndpoint();
+        webApp.UseUserInfoEndpoint();
+        webApp.UseLoginEndpoint();
+        webApp.UseLogoutEndpoint();
     }
 
-    private static void UseLoginEndpoint(this WebApplication app)
+    /// <summary>
+    /// Adds the login endpoint to the middleware pipeline.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    private static void UseLoginEndpoint(this WebApplication webApp)
     {
-        app.MapGet("/login", (string? redirectUrl, HttpContext ctx) =>
+        webApp.MapGet("/login", (string? redirectUrl, HttpContext context) =>
         {
 
             if (string.IsNullOrEmpty(redirectUrl))
@@ -30,13 +42,17 @@ public static class GatewayAuthenticationEndpoints
                 RedirectUri = redirectUrl
             };
 
-            ctx.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, authProps);
+            context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, authProps);
         });
     }
 
-    private static void UseLogoutEndpoint(this WebApplication app)
+    /// <summary>
+    /// Adds the logout endpoint to the middleware pipeline.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    private static void UseLogoutEndpoint(this WebApplication webApp)
     {
-        app.MapGet("/logout", (string? redirectUrl, HttpContext ctx) =>
+        webApp.MapGet("/logout", (string? redirectUrl, HttpContext context) =>
         {
             if (string.IsNullOrEmpty(redirectUrl))
             {
@@ -57,17 +73,23 @@ public static class GatewayAuthenticationEndpoints
         });
     }
 
-    private static void UseUserInfoEndpoint(this WebApplication app)
+    /// <summary>
+    /// Adds the user info endpoint to the middleware pipeline.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    private static void UseUserInfoEndpoint(this WebApplication webApp)
     {
-        app.MapGet("/userinfo", async (TokenService tokenService) =>
+        webApp.MapGet("/userinfo", async (TokenService tokenService) =>
         {
-            var claims = await tokenService.GetIdentityClaimsAsync();
-            var dictionary = new Dictionary<string, string>();
-
+            IEnumerable<Claim>? claims = await tokenService.GetIdentityClaimsAsync();
+            
             if(claims == null)
             {
-                return Results.Unauthorized();
+                return Results.Content("undefined");
             }
+
+            // Map all claims to a dictionary
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
 
             foreach (var entry in claims)
             {

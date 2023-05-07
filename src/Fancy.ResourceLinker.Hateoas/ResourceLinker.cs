@@ -41,7 +41,7 @@ public class ResourceLinker : IResourceLinker
         // Interate through all keys and link child objects which are also resources
         foreach (string key in resource.Keys)
         {
-            object dynamicPropertyValue = resource[key];
+            object? dynamicPropertyValue = resource[key];
 
             if (dynamicPropertyValue == null)
             {
@@ -56,8 +56,8 @@ public class ResourceLinker : IResourceLinker
             else if (dynamicPropertyValue is IEnumerable<ResourceBase>)
             {
                 // Type is a collection of resources -> cast object and link it
-                IEnumerable<ResourceBase> subResources = dynamicPropertyValue as IEnumerable<ResourceBase>;
-                AddLinks(subResources, urlHelper);
+                IEnumerable<ResourceBase>? subResources = dynamicPropertyValue as IEnumerable<ResourceBase>;
+                if(subResources != null) AddLinks(subResources, urlHelper);
             }
         }
     }
@@ -83,7 +83,7 @@ public class ResourceLinker : IResourceLinker
     /// <param name="urlHelper">The URL helper to use to build the links.</param>
     private void LinkObject(ResourceBase resource, IUrlHelper urlHelper)
     {
-        ILinkStrategy linkStrategy = _linkStrategies.FirstOrDefault(ls => ls.CanLinkType(resource.GetType()));
+        ILinkStrategy? linkStrategy = _linkStrategies.FirstOrDefault(ls => ls.CanLinkType(resource.GetType()));
 
         if (linkStrategy != null)
         {

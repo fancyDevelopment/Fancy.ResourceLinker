@@ -1,34 +1,59 @@
 ﻿namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-public class TokenRecord
-{
-    public string UserId { get; set; }
-    public string IdToken { get; set; }
-    public string AccessToken { get; set; }
-    public string RefreshToken { get; set; }
-    public DateTimeOffset ExpiresAt { get; set; }
-}
-
+/// <summary>
+/// A simple implementation of <see cref="ITokenStore"/> to store tokens in memory.
+/// </summary>
+/// <seealso cref="Fancy.ResourceLinker.Gateway.Authentication.ITokenStore" />
 internal class InMemoryTokenStore : ITokenStore
 {
+    /// <summary>
+    /// A dictionary mapping tokens to sessions.
+    /// </summary>
     private Dictionary<string, TokenRecord> _tokens = new Dictionary<string, TokenRecord>();
 
-    public Task SaveOrUpdateTokensAsync(string userId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiration)
+    /// <summary>
+    /// Saves the or update tokens asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="idToken">The identifier token.</param>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="refreshToken">The refresh token.</param>
+    /// <param name="expiration">The expiration.</param>
+    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    public Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiration)
     {
-        _tokens[userId] = new TokenRecord
-        {
-            UserId = userId,
-            IdToken = idToken,
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            ExpiresAt = expiration
-        };
+        _tokens[sessionId] = new TokenRecord(sessionId, idToken, accessToken, refreshToken, expiration );
         return Task.CompletedTask;
     }
 
-    public Task<TokenRecord?> GetTokensAsync(string userId)
+    /// <summary>
+    /// Gets the token record for a provided session asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <returns>
+    /// A token record if available.
+    /// </returns>
+    public Task<TokenRecord?> GetTokenRecordAsync(string sessionId)
     {
-        if (_tokens.ContainsKey(userId)) return Task.FromResult(_tokens[userId]);
-        else return Task.FromResult<TokenRecord>(null);
+        if (_tokens.ContainsKey(sessionId)) return Task.FromResult<TokenRecord?>(_tokens[sessionId]);
+        else return Task.FromResult<TokenRecord?>(null);
+    }
+
+    /// <summary>
+    /// Cleans up the expired token records asynchronous.
+    /// </summary>
+    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    public Task CleanupExpiredTokenRecordsAsync()
+    {
+        Dictionary<string, TokenRecord> validRecords = new Dictionary<string, TokenRecord> ();
+
+        foreach(var record in _tokens.Values)
+        {
+            if(record.ExpiresAt > DateTime.UtcNow) validRecords.Add(record.SessionId, record);
+        }
+
+        _tokens = validRecords;
+
+        return Task.CompletedTask;
     }
 }

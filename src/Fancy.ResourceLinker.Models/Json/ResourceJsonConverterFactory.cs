@@ -58,7 +58,7 @@ public class ResourceJsonConverterFactory : JsonConverterFactory
             BindingFlags.Instance | BindingFlags.Public,
             binder: null,
             args: new object[] { _writePrivates, _ignoreEmptyMetadata },
-            culture: null);
+            culture: null)!;
 
         return converter;
     }

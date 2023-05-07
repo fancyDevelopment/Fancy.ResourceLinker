@@ -12,7 +12,10 @@ public static class ServiceCollectionExtensions
     /// Adds the resource linker to the ioc container.
     /// </summary>
     /// <param name="serviceCollection">The service collection to add the resource linker to.</param>
-    /// <returns>The service collection.</returns>
+    /// <param name="assemblies">The assemblies to search for <see cref="ILinkStrategy"/> implementations to use to link resources.</param>
+    /// <returns>
+    /// The service collection.
+    /// </returns>
     public static IServiceCollection AddResourceLinker(this IServiceCollection serviceCollection, params Assembly[] assemblies)
     {
         serviceCollection.AddTransient(typeof(IResourceLinker), typeof(ResourceLinker));
@@ -29,5 +32,20 @@ public static class ServiceCollectionExtensions
         }
 
         return serviceCollection;
+    }
+
+    /// <summary>
+    /// Adds the resource linker to the ioc container and automatically searches the calling assembly for 
+    /// implementation of <see cref="ILinkStrategy"/> to use to link resources.
+    /// </summary>
+    /// <param name="serviceCollection">The service collection to add the resource linker to.</param>
+    /// <returns>
+    /// The service collection.
+    /// </returns>
+    public static IServiceCollection AddResourceLinker(this IServiceCollection serviceCollection)
+    {
+        // Get the calling assembly and add the resource linker
+        Assembly assembly = Assembly.GetCallingAssembly();
+        return AddResourceLinker(serviceCollection, assembly);
     }
 }

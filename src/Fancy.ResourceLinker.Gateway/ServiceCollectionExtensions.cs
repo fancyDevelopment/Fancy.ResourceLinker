@@ -3,118 +3,227 @@ using Fancy.ResourceLinker.Gateway.Authentication;
 using Fancy.ResourceLinker.Gateway.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
-namespace Fancy.ResourceLinker.Gateway
+namespace Fancy.ResourceLinker.Gateway;
+
+/// <summary>
+/// A class with the required context to build a gateway configuration.
+/// </summary>
+public class GatewayBuilder
 {
-    public class GatewayBuilder
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayBuilder"/> class.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    internal GatewayBuilder(IServiceCollection services)
     {
-        public GatewayBuilder(IServiceCollection services)
-        {
-            Services = services;
-        }
-
-        public IServiceCollection Services { get; }
+        Services = services;
     }
 
-    public class ConfiguredGatewayBuilder : GatewayBuilder
-    {
-        public ConfiguredGatewayBuilder(IServiceCollection services, GatewaySettings settings) : base(services)
-        {
-            Settings = settings;
-        }
+    /// <summary>
+    /// Gets the services.
+    /// </summary>
+    /// <value>
+    /// The services.
+    /// </value>
+    public IServiceCollection Services { get; }
+}
 
-        public GatewaySettings Settings { get; }
+/// <summary>
+/// A class with the a configured context to build a gateway.
+/// </summary>
+public class ConfiguredGatewayBuilder : GatewayBuilder
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConfiguredGatewayBuilder"/> class.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    /// <param name="settings">The settings.</param>
+    internal ConfiguredGatewayBuilder(IServiceCollection services, GatewaySettings settings) : base(services)
+    {
+        Settings = settings;
     }
 
-    public class GatewayAntiForgeryBuilder : GatewayBuilder
+    /// <summary>
+    /// Gets the settings.
+    /// </summary>
+    /// <value>
+    /// The settings.
+    /// </value>
+    public GatewaySettings Settings { get; }
+}
+
+/// <summary>
+/// A class with the required context to build a antiforgery configuration.
+/// </summary>
+public class GatewayAntiForgeryBuilder : GatewayBuilder
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayAntiForgeryBuilder"/> class.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    public GatewayAntiForgeryBuilder(IServiceCollection services) : base(services) { }
+}
+
+/// <summary>
+/// A class with the required context to build a authentication configuration.
+/// </summary>
+public class GatewayAuthenticationBuilder : GatewayBuilder
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayAuthenticationBuilder"/> class.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    public GatewayAuthenticationBuilder(IServiceCollection services) : base(services) { }
+}
+
+/// <summary>
+/// A class with the required context to build a routing configuration.
+/// </summary>
+public class GatewayRoutingBuilder : GatewayBuilder
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayRoutingBuilder"/> class.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    public GatewayRoutingBuilder(IServiceCollection services) : base(services) { }
+}
+
+/// <summary>
+/// Extension class with helpers to easily register the gateway to ioc container.
+/// </summary>
+public static class ServiceCollectionExtensions
+{
+    /// <summary>
+    /// Adds the gateway to the ioc container.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    /// <returns>A gateway builder.</returns>
+    public static GatewayBuilder AddGateway(this IServiceCollection services)
     {
-        public GatewayAntiForgeryBuilder(IServiceCollection services) : base(services)
-        {
-        }
+        return new GatewayBuilder(services);
     }
 
-    public class GatewayAuthenticationBuilder : GatewayBuilder
+    /// <summary>
+    /// Loads the configuration for the gateway.
+    /// </summary>
+    /// <param name="gatewayBuilder">The gateway builder.</param>
+    /// <param name="config">The configuration.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder LoadConfiguration(this GatewayBuilder gatewayBuilder, IConfiguration config)
     {
-        public GatewayAuthenticationBuilder(IServiceCollection services) : base(services)
-        {
-        }
+        GatewaySettings settings = config.Get<GatewaySettings>();
+        if (settings.Authentication != null) gatewayBuilder.Services.AddSingleton(settings.Authentication);
+        if (settings.Routing != null) gatewayBuilder.Services.AddSingleton(settings.Routing);
+        ConfiguredGatewayBuilder configuredGatewayBuilder = new ConfiguredGatewayBuilder(gatewayBuilder.Services, settings);
+        return configuredGatewayBuilder;
     }
 
-    public class GatewayRoutingBuilder : GatewayBuilder
+    /// <summary>
+    /// Adds the anti forgery feature to the gateway.
+    /// </summary>
+    /// <typeparam name="T">A subclass of the gateway builder.</typeparam>
+    /// <param name="gatewayBuilder">The gateway builder.</param>
+    /// <returns>A subclass of the gateway builder.</returns>
+    public static T AddAntiForgery<T>(this T gatewayBuilder) where T : GatewayBuilder
     {
-        public GatewayRoutingBuilder(IServiceCollection services) : base(services)
-        {
-        }
+        GatewayAntiForgery.AddGatewayAntiForgery(gatewayBuilder.Services);
+        return gatewayBuilder;
     }
 
-    public static class ServiceCollectionExtensions
+    /// <summary>
+    /// Adds the anti forgery.
+    /// </summary>
+    /// <typeparam name="T">A subclass of the gateway builder.</typeparam>
+    /// <param name="gatewayBuilder">The gateway builder.</param>
+    /// <param name="buildOptions">The build options.</param>
+    /// <returns>A subclass of the gateway builder.</returns>
+    public static T AddAntiForgery<T>(this T gatewayBuilder, Action<GatewayAntiForgeryBuilder> buildOptions) where T : GatewayBuilder
     {
-        public static GatewayBuilder AddGateway(this IServiceCollection services)
+        GatewayAntiForgery.AddGatewayAntiForgery(gatewayBuilder.Services);
+        buildOptions(new GatewayAntiForgeryBuilder(gatewayBuilder.Services));
+        return gatewayBuilder;
+    }
+
+    /// <summary>
+    /// Adds the authentication feature to the gateway with the default in memory token store.
+    /// </summary>
+    /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder AddAuthentication(this ConfiguredGatewayBuilder configuredGatewayBuilder)
+    {
+        AddAuthentication(configuredGatewayBuilder, options => options.UseInMemoryTokenStore());
+        return configuredGatewayBuilder;
+    }
+
+    /// <summary>
+    /// Adds the authentication feature to the gateway.
+    /// </summary>
+    /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
+    /// <param name="buildOptions">The build options.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder AddAuthentication(this ConfiguredGatewayBuilder configuredGatewayBuilder,
+                                                             Action<GatewayAuthenticationBuilder> buildOptions)
+    {
+        if(configuredGatewayBuilder.Settings.Authentication == null)
         {
-            return new GatewayBuilder(services);
+            throw new InvalidOperationException("You can add authentication only if you have provided settings for it");
         }
 
-        public static ConfiguredGatewayBuilder LoadConfiguration(this GatewayBuilder gatewayBuilder, IConfiguration config)
+        configuredGatewayBuilder.Settings.Authentication.Validate();
+
+        GatewayAuthentication.AddGatewayAuthentication(configuredGatewayBuilder.Services, configuredGatewayBuilder.Settings.Authentication);
+        buildOptions(new GatewayAuthenticationBuilder(configuredGatewayBuilder.Services));
+        return configuredGatewayBuilder;
+    }
+
+    /// <summary>
+    /// Adds the routing feature to the gateway with the default in memory configuration.
+    /// </summary>
+    /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder AddRouting(this ConfiguredGatewayBuilder configuredGatewayBuilder)
+    {
+        AddRouting(configuredGatewayBuilder, options => options.UseInMemoryResourceCache());
+        return configuredGatewayBuilder;
+    }
+
+    /// <summary>
+    /// Adds the routing feature to the gateway.
+    /// </summary>
+    /// <param name="configuredGatewayBuilder">The configured gateway builder.</param>
+    /// <param name="buildOptions">The build options.</param>
+    /// <returns>A configured gateway builder.</returns>
+    public static ConfiguredGatewayBuilder AddRouting(this ConfiguredGatewayBuilder configuredGatewayBuilder,
+                                                           Action<GatewayRoutingBuilder> buildOptions)
+    {
+        if (configuredGatewayBuilder.Settings.Routing == null)
         {
-            GatewaySettings settings = config.Get<GatewaySettings>();
-            if (settings.Authentication != null) gatewayBuilder.Services.AddSingleton(settings.Authentication);
-            if (settings.Routing != null) gatewayBuilder.Services.AddSingleton(settings.Routing);
-            ConfiguredGatewayBuilder configuredGatewayBuilder = new ConfiguredGatewayBuilder(gatewayBuilder.Services, settings);
-            return configuredGatewayBuilder;
+            throw new InvalidOperationException("You can add routing only if you have provided settings for it");
         }
 
-        public static T AddAntiForgery<T>(this T gatewayBuilder) where T : GatewayBuilder
-        {
-            GatewayAntiForgery.AddGatewayAntiForgery(gatewayBuilder.Services);
-            return gatewayBuilder;
-        }
+        configuredGatewayBuilder.Settings.Routing.Validate();
 
-        public static T AddAntiForgery<T>(this T gatewayBuilder, Action<GatewayAntiForgeryBuilder> buildOptions) where T : GatewayBuilder
-        {
-            GatewayAntiForgery.AddGatewayAntiForgery(gatewayBuilder.Services);
-            buildOptions(new GatewayAntiForgeryBuilder(gatewayBuilder.Services));
-            return gatewayBuilder;
-        }
+        GatewayRouting.AddGatewayRouting(configuredGatewayBuilder.Services, configuredGatewayBuilder.Settings.Routing);
+        buildOptions(new GatewayRoutingBuilder(configuredGatewayBuilder.Services));
+        return configuredGatewayBuilder;
+    }
 
-        public static ConfiguredGatewayBuilder AddAuthentication(this ConfiguredGatewayBuilder configuredGatewayBuilder,
-                                                                 Action<GatewayAuthenticationBuilder> buildOptions)
-        {
-            if(configuredGatewayBuilder.Settings.Authentication == null)
-            {
-                throw new InvalidOperationException("You can add authentication only if you have provided settings for it");
-            }
+    /// <summary>
+    /// Uses the in memory token store for the authentication feature.
+    /// </summary>
+    /// <param name="gatewayAuthenticationBuilder">The gateway authentication builder.</param>
+    public static void UseInMemoryTokenStore(this GatewayAuthenticationBuilder gatewayAuthenticationBuilder)
+    {
+        gatewayAuthenticationBuilder.Services.AddSingleton<ITokenStore, InMemoryTokenStore>();
+    }
 
-            configuredGatewayBuilder.Settings.Authentication.Validate();
-
-            GatewayAuthentication.AddGatewayAuthentication(configuredGatewayBuilder.Services, configuredGatewayBuilder.Settings.Authentication);
-            buildOptions(new GatewayAuthenticationBuilder(configuredGatewayBuilder.Services));
-            return configuredGatewayBuilder;
-        }
-
-        public static ConfiguredGatewayBuilder AddRouting(this ConfiguredGatewayBuilder configuredGatewayBuilder,
-                                                               Action<GatewayRoutingBuilder> buildOptions)
-        {
-            if (configuredGatewayBuilder.Settings.Routing == null)
-            {
-                throw new InvalidOperationException("You can add routing only if you have provided settings for it");
-            }
-
-            configuredGatewayBuilder.Settings.Routing.Validate();
-
-            GatewayRouting.AddGatewayRouting(configuredGatewayBuilder.Services, configuredGatewayBuilder.Settings.Routing);
-            buildOptions(new GatewayRoutingBuilder(configuredGatewayBuilder.Services));
-            return configuredGatewayBuilder;
-        }
-
-        public static void UseInMemoryTokenStore(this GatewayAuthenticationBuilder builder)
-        {
-            builder.Services.AddSingleton<ITokenStore, InMemoryTokenStore>();
-        }
-
-        public static void UseInMemoryResourceCache(this GatewayRoutingBuilder builder)
-        {
-            builder.Services.AddSingleton<IResourceCache, InMemoryResourceCache>();
-        }
+    /// <summary>
+    /// Uses the in memory resource cache for the routing builder.
+    /// </summary>
+    /// <param name="gatewayRoutingBuilder">The gateway routing builder.</param>
+    public static void UseInMemoryResourceCache(this GatewayRoutingBuilder gatewayRoutingBuilder)
+    {
+        gatewayRoutingBuilder.Services.AddSingleton<IResourceCache, InMemoryResourceCache>();
     }
 }

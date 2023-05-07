@@ -1,17 +1,26 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Fancy.ResourceLinker.Gateway.Routing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Fancy.ResourceLinker.Gateway
+namespace Fancy.ResourceLinker.Gateway;
+
+/// <summary>
+/// A class to describe the required settings for setting up a gateway.
+/// </summary>
+public class GatewaySettings
 {
-    public class GatewaySettings
-    {
-        public GatewayAuthenticationSettings? Authentication { get; set; }
+    /// <summary>
+    /// Gets or sets the authentication settings.
+    /// </summary>
+    /// <value>
+    /// The authentication settings.
+    /// </value>
+    public GatewayAuthenticationSettings? Authentication { get; set; }
 
-        public GatewayRoutingSettings? Routing { get; set; }
-    }
+    /// <summary>
+    /// Gets or sets the routing settings.
+    /// </summary>
+    /// <value>
+    /// The routing settings.
+    /// </value>
+    public GatewayRoutingSettings? Routing { get; set; }
 }

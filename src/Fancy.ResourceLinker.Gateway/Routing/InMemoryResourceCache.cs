@@ -35,7 +35,7 @@ public class InMemoryResourceCache : IResourceCache
     /// <returns>
     /// True if the cache was able to read and provide a valid resource instance; otherwise, false.
     /// </returns>
-    public bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource resource) where TResource : ResourceBase
+    public bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource? resource) where TResource : ResourceBase
     {
         resource = null;
 

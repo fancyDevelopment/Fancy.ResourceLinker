@@ -9,16 +9,19 @@ namespace Fancy.ResourceLinker.Models;
 /// <summary>
 /// Base class of a resource which can be linked to other resources.
 /// </summary>
-public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object>>
+public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object?>>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceBase"/> class.
     /// </summary>
     public ResourceBase()
     {
+        // Initialize metadata dictionaries
         Links = new Dictionary<string, ResourceLink>();
         Actions = new Dictionary<string, ResourceAction>();
         Sockets = new Dictionary<string, ResourcSocket>();
+
+        // Get all static (compile time) properties of this type
         StaticKeys = GetType()
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                      .Where(p => p.GetIndexParameters().Length == 0)
@@ -79,15 +82,15 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <summary>
     /// Gets a collection containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2"></see>.
     /// </summary>
-    public ICollection<object> Values
+    public ICollection<object?> Values
     {
         get
         {
-            List<object> values = new List<object>();
+            List<object?> values = new List<object?>();
 
             foreach (string key in StaticKeys)
             {
-                values.Add(GetType().GetProperty(key).GetValue(this));
+                values.Add(GetType().GetProperty(key)!.GetValue(this));
             }
 
             values.AddRange(DynamicProperties.Values);
@@ -107,7 +110,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <value>
     /// The dynamic properties.
     /// </value>
-    internal Dictionary<string, object> DynamicProperties { get; } = new Dictionary<string, object>();
+    internal Dictionary<string, object?> DynamicProperties { get; } = new Dictionary<string, object?>();
 
     /// <summary>
     /// Gets the static keys.
@@ -115,7 +118,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <value>
     /// The static keys.
     /// </value>
-    internal List<string> StaticKeys { get;  }
+    internal List<string> StaticKeys { get; }
 
     /// <summary>
     /// Gets or sets the <see cref="System.Object"/> with the specified key.
@@ -125,13 +128,13 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// </value>
     /// <param name="key">The key.</param>
     /// <returns>The object.</returns>
-    public object this[string key] 
+    public object? this[string key] 
     { 
         get
         {
             if (StaticKeys.Contains(key))
             {
-                return GetType().GetProperty(key).GetValue(this);
+                return GetType().GetProperty(key)!.GetValue(this);
             }
             else
             {
@@ -142,7 +145,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
         {
             if (StaticKeys.Contains(key))
             {
-                GetType().GetProperty(key).SetValue(this, value);
+                GetType().GetProperty(key)!.SetValue(this, value);
             }
             else
             {
@@ -152,9 +155,48 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
-    /// Adds the link.
+    /// Gets a specific key and tries to convert the value to an integer.
     /// </summary>
-    /// <param name="rel">The rel.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The value converted to integer.</returns>
+    public int GetAsInt(string key)
+    {
+        object? value = this[key];
+
+        if (value != null) return Convert.ToInt32(value);
+        else throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Gets a specific key and tries to convert the value to a double.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns>The value converted to double.</returns>
+    public double GetAsDouble(string key)
+    {
+        object? value = this[key];
+
+        if (value != null) return Convert.ToDouble(value);
+        else throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Gets a specific key and tries to cast the value to a list of dynamic resources.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns>The value casted to a list of dynamic resources.</returns>
+    public IEnumerable<DynamicResource?> GetAsResourceList(string key)
+    {
+        object? value = this[key];
+
+        if (value != null) return ((IEnumerable<object?>)value).Select(e => (DynamicResource?)e);
+        else throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Adds a link.
+    /// </summary>
+    /// <param name="rel">The relation.</param>
     /// <param name="href">The href.</param>
     public void AddLink(string rel, string href)
     {
@@ -162,9 +204,9 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
-    /// Adds the action.
+    /// Adds an action.
     /// </summary>
-    /// <param name="rel">The relative.</param>
+    /// <param name="rel">The relation.</param>
     /// <param name="method">The method.</param>
     /// <param name="href">The URL to the action.</param>
     public void AddAction(string rel, string method, string href)
@@ -173,9 +215,9 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
-    /// Adds the hub.
+    /// Adds a socket.
     /// </summary>
-    /// <param name="rel">The relative.</param>
+    /// <param name="rel">The relation.</param>
     /// <param name="href">The href.</param>
     /// <param name="method">The method.</param>
     /// <param name="token">The token.</param>
@@ -185,13 +227,24 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     }
 
     /// <summary>
+    /// Adds a socket.
+    /// </summary>
+    /// <param name="rel">The relation.</param>
+    /// <param name="href">The href.</param>
+    /// <param name="method">The method.</param>
+    public void AddSocket(string rel, string href, string method)
+    {
+        Sockets.Add(rel, new ResourcSocket(href, method));
+    }
+
+    /// <summary>
     /// Removes the metadata of links, actions and sockets completely from this instance.
     /// </summary>
-    public void RemoveMetadata()
+    public void ClearMetadata()
     {
-        Links = null;
-        Actions = null;
-        Sockets = null;
+        Links.Clear();
+        Actions.Clear();
+        Sockets.Clear();
     }
 
     /// <summary>
@@ -200,7 +253,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <param name="binder">The binder.</param>
     /// <param name="result">The result.</param>
     /// <returns>true if the member could be retrieved; otherwise, false.</returns>
-    public override bool TryGetMember(GetMemberBinder binder, out object result)
+    public override bool TryGetMember(GetMemberBinder binder, out object? result)
     {
         if (Keys.Contains(binder.Name))
         {
@@ -220,7 +273,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <returns>
     /// true if the member could be set; otherwise, false.
     /// </returns>
-    public override bool TrySetMember(SetMemberBinder binder, object value)
+    public override bool TrySetMember(SetMemberBinder binder, object? value)
     {
         this[binder.Name] = value;
         return true;
@@ -293,7 +346,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <returns>
     /// true if the object contains an element with the specified key; otherwise, false.
     /// </returns>
-    public bool TryGetValue(string key, out object value)
+    public bool TryGetValue(string key, out object? value)
     {
         if (Keys.Contains(key))
         {
@@ -313,7 +366,7 @@ public class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, obje
     /// <returns>
     /// An enumerator that can be used to iterate through the collection.
     /// </returns>
-    public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
     {
         return new ResourceEnumerator(this);
     }

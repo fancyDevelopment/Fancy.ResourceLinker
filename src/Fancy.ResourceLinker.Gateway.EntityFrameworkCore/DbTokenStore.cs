@@ -1,50 +1,78 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 
+/// <summary>
+/// Implements the <see cref="ITokenStore"/> interface to store all tokens into a database.
+/// </summary>
+/// <seealso cref="ITokenStore" />
 internal class DbTokenStore : ITokenStore
 {
+    /// <summary>
+    /// The database context
+    /// </summary>
     private readonly GatewayDbContext _dbContext;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DbTokenStore"/> class.
+    /// </summary>
+    /// <param name="dbContext">The database context.</param>
     public DbTokenStore(GatewayDbContext dbContext) 
     {
         _dbContext = dbContext;
     }
 
-    public async Task<TokenRecord?> GetTokensAsync(string userId)
+    /// <summary>
+    /// Gets the token record for a provided session asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <returns>
+    /// A token record if available.
+    /// </returns>
+    public async Task<TokenRecord?> GetTokenRecordAsync(string sessionId)
     {
-        TokenSet tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.UserId == userId);
+        TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
 
         if (tokenSet == null) { return null; }
 
-        return new TokenRecord
-        {
-            UserId = userId,
-            IdToken = tokenSet.IdToken,
-            AccessToken = tokenSet.AccessToken,
-            RefreshToken = tokenSet.RefreshToken,
-            ExpiresAt = tokenSet.ExpiresAt
-        };
+        return new TokenRecord(sessionId, tokenSet.IdToken, tokenSet.AccessToken, tokenSet.RefreshToken, tokenSet.ExpiresAt);
     }
 
-    public async Task SaveOrUpdateTokensAsync(string userId, string idToken, string accessToken, string refreshToken, DateTimeOffset expiresAt)
+    /// <summary>
+    /// Saves the or update tokens asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="idToken">The identifier token.</param>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="refreshToken">The refresh token.</param>
+    /// <param name="expiresAt">The expires at.</param>
+    public async Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt)
     {
-        TokenSet tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.UserId == userId);
+        TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
 
-        if(tokenSet == null) 
+        if (tokenSet == null)
         {
-            tokenSet = new TokenSet();
-            tokenSet.UserId = userId;
+            tokenSet = new TokenSet(sessionId, idToken, accessToken, refreshToken, expiresAt);
             _dbContext.TokenSets.Add(tokenSet);
         }
-
-        tokenSet.IdToken = idToken;
-        tokenSet.AccessToken = accessToken;
-        tokenSet.RefreshToken = refreshToken;
-        tokenSet.ExpiresAt = expiresAt;
+        else
+        {
+            tokenSet.IdToken = idToken;
+            tokenSet.AccessToken = accessToken;
+            tokenSet.RefreshToken = refreshToken;
+            tokenSet.ExpiresAt = expiresAt;
+        }
 
         await _dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Cleans up the expired token records asynchronous.
+    /// </summary>
+    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    public Task CleanupExpiredTokenRecordsAsync()
+    {
+        return _dbContext.TokenSets.Where(ts => ts.ExpiresAt < DateTime.UtcNow).ExecuteDeleteAsync();
     }
 }

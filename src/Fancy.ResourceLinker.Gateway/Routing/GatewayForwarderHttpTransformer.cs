@@ -5,21 +5,28 @@ using Yarp.ReverseProxy.Forwarder;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
+/// <summary>
+/// A http transformer used in combination with the http forwarder to add token if necessary.
+/// </summary>
+/// <seealso cref="Yarp.ReverseProxy.Forwarder.HttpTransformer" />
 internal class GatewayForwarderHttpTransformer : HttpTransformer
 {
-    public static readonly string SendAccessTokenItemKey = "SendAccessTokenItemKey";
+    /// <summary>
+    /// The send access token item key.
+    /// </summary>
+    internal static readonly string SendAccessTokenItemKey = "SendAccessTokenItemKey";
 
-    public override async ValueTask TransformRequestAsync(HttpContext httpContext,
-    HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
+    public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
     {
-        // Copy all request headers
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
-
-        // Add access token
-        TokenService? tokenService = httpContext.RequestServices.GetService(typeof(TokenService)) as TokenService;
 
         if (Convert.ToBoolean(httpContext.Items[SendAccessTokenItemKey]))
         {
+            // Add access token
+            TokenService? tokenService = httpContext.RequestServices.GetService(typeof(TokenService)) as TokenService;
+
+            if (tokenService == null) throw new InvalidOperationException($"If 'EnforceAuthentication' is 'true', gateway authentication must be configured.");
+
             proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await tokenService.GetAccessTokenAsync());
         }
         

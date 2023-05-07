@@ -6,7 +6,7 @@ namespace Fancy.ResourceLinker.Hateoas;
 /// <summary>
 /// Controller base class for HATEOAS controllers with helper methods. 
 /// </summary>
-/// <seealso cref="Microsoft.AspNetCore.Mvc.ControllerBase" />
+/// <seealso cref="ControllerBase" />
 public class HypermediaController : ControllerBase
 {
     /// <summary>

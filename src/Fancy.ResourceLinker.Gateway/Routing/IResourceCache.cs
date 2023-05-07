@@ -1,5 +1,4 @@
 ﻿using Fancy.ResourceLinker.Models;
-using System;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
@@ -24,5 +23,5 @@ public interface IResourceCache
     /// <param name="maxResourceAge">The maximum age of the resource.</param>
     /// <param name="resource">The resource.</param>
     /// <returns>True if the cache was able to read and provide a valid resource instance; otherwise, false.</returns>
-    bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource resource) where TResource : ResourceBase;
+    bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource? resource) where TResource : ResourceBase;
 }

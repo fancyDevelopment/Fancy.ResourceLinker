@@ -5,7 +5,7 @@ namespace Fancy.ResourceLinker.Models;
 /// <summary>
 /// An enumerator to enumerator through all keys of a <see cref="ResourceBase"/>.
 /// </summary>
-public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object>>
+public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object?>>
 {
     /// <summary>
     /// The resource to enumerate.
@@ -15,7 +15,7 @@ public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object>>
     /// <summary>
     /// The current element.
     /// </summary>
-    private KeyValuePair<string, object> _current;
+    private KeyValuePair<string, object?> _current;
 
     /// <summary>
     /// The current index.
@@ -25,7 +25,7 @@ public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object>>
     /// <summary>
     /// Gets the element in the collection at the current position of the enumerator.
     /// </summary>
-    public KeyValuePair<string, object> Current => _current;
+    public KeyValuePair<string, object?> Current => _current;
 
     /// <summary>
     /// Gets the element in the collection at the current position of the enumerator.
@@ -82,8 +82,8 @@ public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object>>
     private void SetCurrentIndex()
     {
         string key = _resource.Keys.ToList()[_currentIndex];
-        object value = _resource[key];
+        object? value = _resource[key];
 
-        _current = new KeyValuePair<string, object>(key, value);
+        _current = new KeyValuePair<string, object?>(key, value);
     }
 }

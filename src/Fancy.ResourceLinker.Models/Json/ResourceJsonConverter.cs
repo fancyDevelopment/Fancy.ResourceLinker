@@ -48,7 +48,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
     /// or
     /// Incomplete JSON object
     /// </exception>
-    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Null) return null;
 
@@ -64,7 +64,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
             if (reader.TokenType == JsonTokenType.EndObject) break;
 
             // Read the next key
-            var key = reader.GetString();
+            var key = reader.GetString()!;
 
             // If key is private field remove underscore
             key = key[0] == '_' ? key.Substring(1) : key;
@@ -74,12 +74,12 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
 
             if (!reader.Read()) throw new JsonException("Incomplete or broken JSON object!");
 
-            object value = null;
+            object? value;
 
             if (result.StaticKeys.Contains(key))
             {
                 // Read a static key
-                value = JsonSerializer.Deserialize(ref reader, result.GetType().GetProperty(key).PropertyType, options);
+                value = JsonSerializer.Deserialize(ref reader, result.GetType().GetProperty(key)!.PropertyType, options);
             }
             else
             {
@@ -92,7 +92,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
 
         if(!_writePrivates)
         {
-            result.RemoveMetadata();
+            result.ClearMetadata();
         }
 
         return result;
@@ -126,7 +126,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
 
                     if (_ignoreEmptyMetadata)
                     {
-                        IDictionary metadataDictionary = pair.Value as IDictionary;
+                        IDictionary? metadataDictionary = pair.Value as IDictionary;
                         if (metadataDictionary != null && metadataDictionary.Count == 0)
                         {
                             continue;
@@ -151,9 +151,9 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
     /// <param name="reader">The reader.</param>
     /// <param name="options">The options.</param>
     /// <returns>The value.</returns>
-    private object ReadDynamicValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private object? ReadDynamicValue(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
-        object value = null;
+        object? value = null;
 
         if (reader.TokenType == JsonTokenType.Number)
         {
@@ -177,7 +177,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
         }
         else if(reader.TokenType == JsonTokenType.StartArray)
         {
-            List<object> arrayValues = new List<object>();
+            IList<object?> arrayValues = new List<object?>();
             while(reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndArray) break;

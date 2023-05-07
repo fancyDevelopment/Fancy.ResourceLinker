@@ -12,21 +12,42 @@ using System.Security.Claims;
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
 // ToDo: think about token exchange
-public static class GatewayAuthentication
-{
-    public static readonly string AuthenticationPolicyName = "GatewayEnforceAuthentication";
 
+/// <summary>
+/// Class with helper methods to set up authentication feature.
+/// </summary>
+internal static class GatewayAuthentication
+{
+    /// <summary>
+    /// The settings.
+    /// </summary>
+    private static GatewayAuthenticationSettings _settings = null!;
+
+    /// <summary>
+    /// The authentication policy name.
+    /// </summary>
+    internal static readonly string AuthenticationPolicyName = "GatewayEnforceAuthentication";
+
+    /// <summary>
+    /// Adds the required services for the gateway authentication feature to the ioc container.
+    /// </summary>
+    /// <param name="services">The services.</param>
+    /// <param name="settings">The settings.</param>
     internal static void AddGatewayAuthentication(IServiceCollection services, GatewayAuthenticationSettings settings)
     {
+        _settings = settings;
         services.AddSingleton<DiscoveryDocumentService>();
         services.AddSingleton<TokenClient>();
         services.AddScoped<TokenService>();
+        services.AddHostedService<TokenCleanupBackgroundService>();
 
         services.AddAuthorization(options =>
         {
+            // Add the authentication policy for routes which are marked with 'EnforceAuthentication'
             options.AddPolicy(AuthenticationPolicyName, new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         });
 
+        // Add required authentication services
         services.AddAuthentication(options =>
         {
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -52,16 +73,18 @@ public static class GatewayAuthentication
             options.RequireHttpsMetadata = false;
             options.TokenValidationParameters.NameClaimType = settings.UniqueIdentifierClaimType;
 
-            foreach (var scope in settings.AuthorizationCodeScopes)
+            foreach (string scope in settings.AuthorizationCodeScopes.Split(' '))
             {
                 options.Scope.Add(scope);
             }
 
             options.Events.OnTokenValidated = async (context) =>
             {
+                if (context.TokenEndpointResponse == null) throw new Exception("No token response available");
+
                 // Provide new token to token service
                 var tokenService = context.HttpContext.RequestServices.GetRequiredService<TokenService>();
-                string sesstionId = await tokenService.SaveTokenForNewSessionAsync(context);
+                string sesstionId = await tokenService.SaveTokenForNewSessionAsync(context.TokenEndpointResponse);
                 context.HttpContext.Items.Add("TokenSessionId", sesstionId);
             };
 
@@ -69,10 +92,13 @@ public static class GatewayAuthentication
             {
                 string? tokenSessionId = context.HttpContext.Items["TokenSessionId"] as string;
 
-                if (!string.IsNullOrWhiteSpace(tokenSessionId))
+                if (!string.IsNullOrWhiteSpace(tokenSessionId) && context.Principal != null)
                 {
+                    var sessionIdClaim = new Claim("TokenSessionId", tokenSessionId);
+                    var uniqueNameClaim = context.Principal.Claims.Single(c => c.Type == settings.UniqueIdentifierClaimType);
+
                     // Setup a new default identity which only contians the token session id
-                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim("TokenSessionId", tokenSessionId) }, context.Principal.Identity.AuthenticationType));
+                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { sessionIdClaim, uniqueNameClaim }, context.Principal?.Identity?.AuthenticationType, settings.UniqueIdentifierClaimType, null));
                 }
 
                 return Task.CompletedTask;
@@ -80,6 +106,8 @@ public static class GatewayAuthentication
 
             options.Events.OnRedirectToIdentityProvider = context =>
             {
+                // If the request was made 'from Code aka from javascript' return unauthorized instead of the default redirect
+                // to make visible to a javascript that the authentication is not valid (anymore)
                 if(context.Request.Headers["X-Requested-With"] == "XmlHttpRequest")
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -90,30 +118,40 @@ public static class GatewayAuthentication
         });
     }
 
-    public static void UseGatewayAuthentication(WebApplication app)
+    /// <summary>
+    /// Adds the required gateway authentication middlewares to the middleware pipeline for the authentication feature.
+    /// </summary>
+    /// <param name="webApp">The web application.</param>
+    internal static void UseGatewayAuthentication(WebApplication app)
     {
+        // Add the default asp.net core middlewares for authentication and authorization
         app.UseAuthentication();
         app.UseAuthorization();
-        app.UseCookiePolicy();
+        //app.UseCookiePolicy();
 
         // Custom Middleware to read current user into token service
-        app.Use(async (ctx, next) =>
+        app.Use(async (context, next) =>
         {
-            TokenService tokenService = ctx.RequestServices.GetService<TokenService>();
+            TokenService tokenService = context.RequestServices.GetRequiredService<TokenService>();
+            string? currentSessionId = context.User.Claims.SingleOrDefault(c => c.Type == "TokenSessionId")?.Value;
 
-            if (tokenService != null)
+            // Add the identity from the token only if we still have a valid session
+            if (!string.IsNullOrEmpty(currentSessionId))
             {
-                tokenService.CurrentSessionId = ctx.User.Claims.SingleOrDefault(c => c.Type == "TokenSessionId")?.Value;
-                ctx.User.AddIdentity(new ClaimsIdentity(await tokenService.GetIdentityClaimsAsync(), "Gateway"));
+                tokenService.CurrentSessionId = currentSessionId;
+                
+                // Add the identity from the current valid token
+                context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetAccessTokenClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, "roles"));
             }
 
             try
             {
-                await next(ctx);
+                await next(context);
             }
-            catch(TokenRefreshException e)
+            catch(TokenRefreshException)
             {
-                await ctx.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme);
+                // If a token refresh fails during the following processing of the request, we send the user back a challange result.
+                await context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme);
             }
             
         });

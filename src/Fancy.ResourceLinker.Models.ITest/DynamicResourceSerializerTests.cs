@@ -42,7 +42,7 @@ public class DynamicResourceSerializerTests
         JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
         serializerOptions.AddResourceConverter(false, false);
 
-        dynamic? deserializedObject = JsonSerializer.Deserialize<DynamicResource>(TEST_DATA, serializerOptions);
+        dynamic deserializedObject = JsonSerializer.Deserialize<DynamicResource>(TEST_DATA, serializerOptions)!;
 
         Assert.IsNotNull(deserializedObject);
         Assert.AreEqual(5, deserializedObject.IntProperty);
