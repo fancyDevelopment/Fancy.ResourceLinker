@@ -1,4 +1,8 @@
-﻿using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -20,14 +24,26 @@ internal class TokenService
     private readonly TokenClient _tokenClient;
 
     /// <summary>
+    /// The logger.
+    /// </summary>
+    private readonly ILogger<TokenService> _logger;
+
+    /// <summary>
+    /// The environment.
+    /// </summary>
+    private readonly IWebHostEnvironment _environment;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="TokenService"/> class.
     /// </summary>
     /// <param name="tokenStore">The token store.</param>
     /// <param name="tokenClient">The token client.</param>
-    public TokenService(ITokenStore tokenStore, TokenClient tokenClient) 
+    public TokenService(ITokenStore tokenStore, TokenClient tokenClient, ILogger<TokenService> logger, IWebHostEnvironment environment) 
     {
         _tokenStore = tokenStore;
         _tokenClient = tokenClient;
+        _logger = logger;
+        _environment = environment;
     }
 
     /// <summary>
@@ -79,18 +95,20 @@ internal class TokenService
     {
         if(CurrentSessionId == null)
         {
-            throw new InvalidOperationException("No session Id set, can not retrieve token");
+            throw new NoSessionIdException();
         }
 
         TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);
 
         if(tokenRecord == null)
         {
-            throw new InvalidOperationException("No token for session current session available");
+            throw new NoTokenForCurrentSessionIdException();
         }
 
         if(IsExpired(tokenRecord))
         {
+            _logger.LogInformation("Access Token expired, executing token refresh");
+
             // Refresh the token
             TokenRefreshResponse? tokenRefresh = await _tokenClient.RefreshAsync(tokenRecord.RefreshToken);
 
@@ -98,6 +116,14 @@ internal class TokenService
             {
                 throw new TokenRefreshException();
             }
+
+            if (_environment.IsDevelopment())
+                _logger.LogInformation($"Received new tokens via token refresh \n " +
+                                      $"IdToken: {tokenRefresh.IdToken} \n" +
+                                      $"AccessToken: {tokenRefresh.AccessToken} \n" +
+                                      $"RefreshToken: {tokenRefresh.RefreshToken}");
+            else
+                _logger.LogInformation("Received new tokens via token refresh");
 
             DateTime expiresAt = DateTime.UtcNow.AddSeconds(Convert.ToInt32(tokenRefresh.ExpiresIn));
             await _tokenStore.SaveOrUpdateTokensAsync(CurrentSessionId, tokenRefresh.IdToken, tokenRefresh.AccessToken, tokenRefresh.RefreshToken, expiresAt);
@@ -121,7 +147,7 @@ internal class TokenService
 
         if (tokenRecord == null)
         {
-            throw new InvalidOperationException("No tokens for current session available");
+            throw new NoTokenForCurrentSessionIdException();
         }
 
         JwtSecurityToken accessToken = new JwtSecurityTokenHandler().ReadJwtToken(tokenRecord.AccessToken);
@@ -141,7 +167,7 @@ internal class TokenService
 
         if (tokenRecord == null)
         {
-            throw new InvalidOperationException("No tokens for current session available");
+            throw new NoTokenForCurrentSessionIdException();
         }
 
         JwtSecurityToken idToken = new JwtSecurityTokenHandler().ReadJwtToken(tokenRecord.IdToken);

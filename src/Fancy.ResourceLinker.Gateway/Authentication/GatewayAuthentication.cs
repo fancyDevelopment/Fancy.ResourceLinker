@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
@@ -16,7 +20,7 @@ namespace Fancy.ResourceLinker.Gateway.Authentication;
 /// <summary>
 /// Class with helper methods to set up authentication feature.
 /// </summary>
-internal static class GatewayAuthentication
+internal sealed class GatewayAuthentication
 {
     /// <summary>
     /// The settings.
@@ -82,6 +86,17 @@ internal static class GatewayAuthentication
             {
                 if (context.TokenEndpointResponse == null) throw new Exception("No token response available");
 
+                IWebHostEnvironment environment = context.HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+                ILogger logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<GatewayAuthentication>>();
+
+                if (environment.IsDevelopment())
+                    logger.LogInformation($"Received valid token via authorization flow \n " +
+                                          $"IdToken: {context.TokenEndpointResponse.IdToken} \n" +
+                                          $"AccessToken: {context.TokenEndpointResponse.AccessToken} \n" +
+                                          $"RefreshToken: {context.TokenEndpointResponse.RefreshToken}");
+                else
+                    logger.LogInformation("Received valid token via authorization flow");
+
                 // Provide new token to token service
                 var tokenService = context.HttpContext.RequestServices.GetRequiredService<TokenService>();
                 string sesstionId = await tokenService.SaveTokenForNewSessionAsync(context.TokenEndpointResponse);
@@ -106,6 +121,8 @@ internal static class GatewayAuthentication
 
             options.Events.OnRedirectToIdentityProvider = context =>
             {
+                ILogger logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<GatewayAuthentication>>();
+                logger.LogInformation("Starting authorization flow for request to: " + context.HttpContext.Request.GetDisplayUrl());
                 // If the request was made 'from Code aka from javascript' return unauthorized instead of the default redirect
                 // to make visible to a javascript that the authentication is not valid (anymore)
                 if(context.Request.Headers["X-Requested-With"] == "XmlHttpRequest")
@@ -135,23 +152,29 @@ internal static class GatewayAuthentication
             TokenService tokenService = context.RequestServices.GetRequiredService<TokenService>();
             string? currentSessionId = context.User.Claims.SingleOrDefault(c => c.Type == "TokenSessionId")?.Value;
 
-            // Add the identity from the token only if we still have a valid session
-            if (!string.IsNullOrEmpty(currentSessionId))
-            {
-                tokenService.CurrentSessionId = currentSessionId;
-                
-                // Add the identity from the current valid token
-                context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetAccessTokenClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, "roles"));
-            }
-
             try
             {
+                // Add the identity from the token only if we still have a valid session
+                if (!string.IsNullOrEmpty(currentSessionId))
+                {
+                    tokenService.CurrentSessionId = currentSessionId;
+
+                    // Add the identity from the current valid token
+                    context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetAccessTokenClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, "roles"));
+                }
+
                 await next(context);
             }
-            catch(TokenRefreshException)
+            catch(TokenServiceException e)
             {
-                // If a token refresh fails during the following processing of the request, we send the user back a challange result.
-                await context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme);
+                ILogger<GatewayAuthentication> logger = context.RequestServices.GetRequiredService<ILogger<GatewayAuthentication>>();
+                logger.LogInformation(e.GetType().Name + " during token service operation, rechallenging authorization");
+
+                // If something went wrong with the token service we indicate unauthorized for api clients or challange a new authentication flow
+                if (context.Request.Headers["X-Requested-With"] == "XmlHttpRequest")
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                else
+                    await context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme);
             }
             
         });

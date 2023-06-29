@@ -1,7 +1,9 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
@@ -26,6 +28,8 @@ internal static class GatewayPipeline
             {
                 // Add access token to request
                 var tokenService = context.RequestServices.GetRequiredService<TokenService>();
+                var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Fancy.ResourceLinker.Gateway.Routing.GatewayPipeline");
+                logger.LogDebug("Adding Authorization header and token into request to " + context.Request.GetDisplayUrl());
                 var accessToken = await tokenService.GetAccessTokenAsync();
                 context.Request.Headers.Add("Authorization", "Bearer " + accessToken);
             }
