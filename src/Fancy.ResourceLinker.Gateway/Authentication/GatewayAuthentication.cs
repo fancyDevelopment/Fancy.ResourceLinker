@@ -77,6 +77,7 @@ internal sealed class GatewayAuthentication
             options.RequireHttpsMetadata = false;
             options.TokenValidationParameters.NameClaimType = settings.UniqueIdentifierClaimType;
 
+            options.Scope.Clear();
             foreach (string scope in settings.AuthorizationCodeScopes.Split(' '))
             {
                 options.Scope.Add(scope);

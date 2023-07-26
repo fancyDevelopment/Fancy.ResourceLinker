@@ -108,8 +108,6 @@ public class GatewayRouter
             Method = HttpMethod.Get
         };
 
-        request.Headers.Add("ResourceProxy", "http://localhost:5101");
-
         if(sendAccessToken)
         {
             string accessToken;
