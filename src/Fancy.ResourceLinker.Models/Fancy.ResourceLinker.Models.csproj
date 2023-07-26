@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,7 +10,7 @@
   <!-- Package Metadata -->
   <PropertyGroup>
     <Title>Fancy Resource Linker Gateway</Title>
-    <Description>A library to create API Gateways with dynamic data structures and to create HATEOAS like links to resources published by ASP.NET Core..</Description>
+    <Description>A library to work with dynamic object wich can be serialized and deserialized to and from json.</Description>
     <Authors>fancy Development - Daniel Murrmann</Authors>
     <Copyright>Copyright 2015-2023 fancyDevelopment - Daniel Murrmann</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
