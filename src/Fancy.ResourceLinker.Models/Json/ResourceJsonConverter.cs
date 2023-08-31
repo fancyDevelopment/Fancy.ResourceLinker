@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -9,7 +10,7 @@ namespace Fancy.ResourceLinker.Models.Json;
 /// </summary>
 /// <typeparam name="T">The concrete type of the resource to convert.</typeparam>
 /// <seealso cref="System.Text.Json.Serialization.JsonConverter{T}" />
-public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, new()
+public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase
 {
     /// <summary>
     /// The a flag to indicate weather the converter shall write json private fields.
@@ -55,7 +56,12 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
         if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException("A resource must always be a JSON object.");
 
         // Create the default result.
-        var result = new T();
+        T? result = Activator.CreateInstance(typeof(T), true) as T;
+
+        if (result == null)
+        {
+            throw new JsonException("Unable to create a new instance of " + typeof(T).Name + ". Make sure your class has at least a private parameterless constructor");
+        }
 
         while (true)
         {
@@ -104,7 +110,7 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
     /// <param name="writer">The writer to write to.</param>
     /// <param name="value">The value to convert to JSON.</param>
     /// <param name="options">An object that specifies serialization options to use.</param>
-    public override void Write(Utf8JsonWriter writer, T value,JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
         if (value is null)
         {
@@ -118,6 +124,10 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase, 
             // Step through each key add it to json
             foreach (var pair in value)
             {
+                // If the current attribute is a static attribute with json ignore, just continue
+                PropertyInfo? staticPropertyInfo = value.GetType().GetProperty(pair.Key);
+                if (staticPropertyInfo != null && Attribute.IsDefined(staticPropertyInfo, typeof(JsonIgnoreAttribute))) continue;
+
                 string key = pair.Key;
                 key = char.ToLower(key[0]) + key.Substring(1);
                 if (key == "links" || key == "actions" || key == "sockets")

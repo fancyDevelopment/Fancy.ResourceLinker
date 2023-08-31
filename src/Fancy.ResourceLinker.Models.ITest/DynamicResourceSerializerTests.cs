@@ -1,5 +1,7 @@
 using Fancy.ResourceLinker.Models.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace Fancy.ResourceLinker.Models.ITest;
 
@@ -11,6 +13,19 @@ class TestObject : ResourceBase
 {
     public int IntProperty { get; set; } = 5;
     public string StringProperty { get; set; } = "foobar";
+
+    [JsonIgnore]
+    public string IgnoredStaticProperty { get; set; } = "foo";
+}
+
+class NonPubCtorTestObject : ResourceBase
+{
+    private NonPubCtorTestObject() { }
+    public int IntProperty { get; set; } = 5;
+    public string StringProperty { get; set; } = "foobar";
+
+    [JsonIgnore]
+    public string IgnoredStaticProperty { get; set; } = "foo";
 }
 
 /// <summary>
@@ -62,6 +77,31 @@ public class DynamicResourceSerializerTests
         Assert.AreEqual(TEST_DATA.Replace(Environment.NewLine, "").Replace(" ", ""), serializedObject);
     }
 
+    /// <summary>
+    /// Tests the deserialization of the complex object to a dynamic resource.
+    /// </summary>
+    [TestMethod]
+    public void DeserializeIntoObjectWithNonPubCtor()
+    {
+        JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
+        serializerOptions.AddResourceConverter(false, false);
+
+        dynamic deserializedObject = JsonSerializer.Deserialize<NonPubCtorTestObject>(TEST_DATA, serializerOptions)!;
+
+        Assert.IsNotNull(deserializedObject);
+        Assert.AreEqual(5, deserializedObject.IntProperty);
+        Assert.AreEqual("foobar", deserializedObject.StringProperty);
+        Assert.AreEqual(true, deserializedObject.BoolProperty);
+        Assert.AreEqual("subObjFoobar", deserializedObject.ObjProperty.SubObjProperty);
+        Assert.AreEqual(null, deserializedObject.NullProperty);
+        Assert.AreEqual(5, deserializedObject.ArrayProperty[0]);
+        Assert.AreEqual("foo", deserializedObject.ArrayProperty[1]);
+        Assert.AreEqual("fooInArray", deserializedObject.ArrayProperty[2].ObjInArrProperty);
+        Assert.AreEqual("subarray", deserializedObject.ArrayProperty[3][0]);
+        Assert.AreEqual(6, deserializedObject.ArrayProperty[3][1]);
+        Assert.AreEqual(true, deserializedObject.ArrayProperty[3][2]);
+    }
+
     [TestMethod]
     public void SerializeComplexObjectWithoutEmptyMetadata_InObjectWithNoMetadata()
     {
@@ -101,5 +141,21 @@ public class DynamicResourceSerializerTests
         Assert.AreEqual(_linksPorperty.GetProperty("self").GetProperty("href").GetString(), "http://my.domain/api/my/object");
         Assert.IsFalse(document.RootElement.TryGetProperty("_actions", out var _actionsProperty));
         Assert.IsFalse(document.RootElement.TryGetProperty("_sockets", out var _socketsPorperty));
+    }
+
+    [TestMethod]
+    public void SerializeComplexObjectWithoutIgnoredProperties()
+    {
+        TestObject data = new TestObject();
+
+        JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
+        serializerOptions.AddResourceConverter(true, true);
+
+        string serializedObject = JsonSerializer.Serialize(data, serializerOptions);
+
+        JsonDocument document = JsonDocument.Parse(serializedObject);
+
+        JsonElement result;
+        Assert.IsFalse(document.RootElement.TryGetProperty("ignoredStaticProperty", out result));
     }
 }
