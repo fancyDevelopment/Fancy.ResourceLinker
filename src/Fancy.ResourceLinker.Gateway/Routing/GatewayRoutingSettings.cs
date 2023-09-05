@@ -6,6 +6,14 @@
 public class GatewayRoutingSettings
 {
     /// <summary>
+    /// Gets or sets the resource proxy.
+    /// </summary>
+    /// <value>
+    /// The resource proxy.
+    /// </value>
+    public string? ResourceProxy { get; set; }
+
+    /// <summary>
     /// Gets or sets the routes.
     /// </summary>
     /// <value>
@@ -13,6 +21,10 @@ public class GatewayRoutingSettings
     /// </value>
     public IDictionary<string, RouteSettings> Routes { get; set; } = new Dictionary<string, RouteSettings>();
 
+    /// <summary>
+    /// Validates the settings.
+    /// </summary>
+    /// <exception cref="System.InvalidOperationException">Each route needs to have at least a 'BaseUrl'</exception>
     public void Validate()
     {
         // Check required fields of each route

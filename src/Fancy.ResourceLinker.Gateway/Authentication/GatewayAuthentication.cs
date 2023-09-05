@@ -133,6 +133,13 @@ internal sealed class GatewayAuthentication
                 }
                 return Task.CompletedTask;
             };
+
+            // ToDo: Get this from configuration
+            options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+            {
+                context.ProtocolMessage.IssuerAddress = "https://login-dev.witglobal.net/idp/startSLO.ping";
+                return Task.CompletedTask;
+            };
         });
     }
 

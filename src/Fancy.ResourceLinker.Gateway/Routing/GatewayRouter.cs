@@ -108,6 +108,11 @@ public class GatewayRouter
             Method = HttpMethod.Get
         };
 
+        if (_settings.ResourceProxy != null)
+        {
+            request.Headers.Add("XResourceProxy", _settings.ResourceProxy);
+        }
+
         if(sendAccessToken)
         {
             string accessToken;
@@ -228,6 +233,11 @@ public class GatewayRouter
         proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
 
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
+
+        if (_settings.ResourceProxy != null)
+        {
+            proxyRequest.Headers.Add("XResourceProxy", _settings.ResourceProxy);
+        }
 
         proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());
         proxyRequest.Headers.Host = requestUri.Authority;
