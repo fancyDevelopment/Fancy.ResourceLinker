@@ -126,9 +126,9 @@ public static class UrlHelperExtensions
     private static string CreateAbsoluteUrl(IUrlHelper urlHelper, string relativeUrl)
     {
         string baseUrl;
-        if (urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("ResourceProxy"))
+        if (urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("XResourceProxy"))
         {
-            baseUrl = urlHelper.ActionContext.HttpContext.Request.Headers["ResourceProxy"];
+            baseUrl = urlHelper.ActionContext.HttpContext.Request.Headers["XResourceProxy"];
         }
         else
         {

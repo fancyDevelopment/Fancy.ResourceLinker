@@ -200,7 +200,7 @@ public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<str
     /// <param name="href">The href.</param>
     public void AddLink(string rel, string href)
     {
-        Links.Add(rel, new ResourceLink(href));
+        Links[rel] = new ResourceLink(href);
     }
 
     /// <summary>
@@ -211,7 +211,7 @@ public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<str
     /// <param name="href">The URL to the action.</param>
     public void AddAction(string rel, string method, string href)
     {
-        Actions.Add(rel, new ResourceAction(method, href));
+        Actions[rel] = new ResourceAction(method, href);
     }
 
     /// <summary>
@@ -223,7 +223,7 @@ public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<str
     /// <param name="token">The token.</param>
     public void AddSocket(string rel, string href, string method, string token)
     {
-        Sockets.Add(rel, new ResourcSocket(href, method, token));
+        Sockets[rel] = new ResourcSocket(href, method, token);
     }
 
     /// <summary>
