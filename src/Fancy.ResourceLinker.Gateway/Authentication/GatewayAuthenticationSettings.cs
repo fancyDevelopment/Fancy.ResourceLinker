@@ -70,6 +70,14 @@ public class GatewayAuthenticationSettings
     /// </value>
     public bool QueryUserInfoEndpoint { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the issuer address for sign out.
+    /// </summary>
+    /// <value>
+    /// The issuer address for sign out.
+    /// </value>
+    public string? IssuerAddressForSignOut { get; set; }
+
     public void Validate()
     {
         // Check required fields

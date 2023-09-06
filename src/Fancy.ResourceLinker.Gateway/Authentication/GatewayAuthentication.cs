@@ -137,7 +137,13 @@ internal sealed class GatewayAuthentication
             // ToDo: Get this from configuration
             options.Events.OnRedirectToIdentityProviderForSignOut = context =>
             {
-                context.ProtocolMessage.IssuerAddress = "https://login-dev.witglobal.net/idp/startSLO.ping";
+                if (settings.IssuerAddressForSignOut != null)
+                {
+                    context.ProtocolMessage.IssuerAddress = settings.IssuerAddressForSignOut;
+                }
+
+                context.ProtocolMessage.ClientId = settings.ClientId;
+
                 return Task.CompletedTask;
             };
         });
