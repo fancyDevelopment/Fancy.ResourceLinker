@@ -29,7 +29,7 @@ internal static class GatewayAuthenticationEndpoints
     /// <param name="webApp">The web application.</param>
     private static void UseLoginEndpoint(this WebApplication webApp)
     {
-        webApp.MapGet("/login", (string? redirectUrl, HttpContext context) =>
+        webApp.MapGet("/login", async (string? redirectUrl, HttpContext context) =>
         {
 
             if (string.IsNullOrEmpty(redirectUrl))
@@ -42,7 +42,7 @@ internal static class GatewayAuthenticationEndpoints
                 RedirectUri = redirectUrl
             };
 
-            context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, authProps);
+            await context.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, authProps);
         });
     }
 
