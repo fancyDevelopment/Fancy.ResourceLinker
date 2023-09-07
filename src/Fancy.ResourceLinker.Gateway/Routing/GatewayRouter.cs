@@ -110,7 +110,7 @@ public class GatewayRouter
 
         if (_settings.ResourceProxy != null)
         {
-            request.Headers.Add("XResourceProxy", _settings.ResourceProxy);
+            request.Headers.Add("X-Resource-Proxy", _settings.ResourceProxy);
         }
 
         if(sendAccessToken)
@@ -236,7 +236,7 @@ public class GatewayRouter
 
         if (_settings.ResourceProxy != null)
         {
-            proxyRequest.Headers.Add("XResourceProxy", _settings.ResourceProxy);
+            proxyRequest.Headers.Add("X-Resource-Proxy", _settings.ResourceProxy);
         }
 
         proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());
