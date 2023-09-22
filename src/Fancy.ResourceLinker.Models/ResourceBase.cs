@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -9,8 +8,13 @@ namespace Fancy.ResourceLinker.Models;
 /// <summary>
 /// Base class of a resource which can be linked to other resources.
 /// </summary>
-public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<string, object?>>
+public abstract class ResourceBase : IResource
 {
+    /// <summary>
+    /// The static keys.
+    /// </summary>
+    private ICollection<string> _staticKeys;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceBase"/> class.
     /// </summary>
@@ -22,18 +26,14 @@ public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<str
         Sockets = new Dictionary<string, ResourcSocket>();
 
         // Get all static (compile time) properties of this type
-        StaticKeys = GetType()
+        _staticKeys = GetType()
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                      .Where(p => p.GetIndexParameters().Length == 0)
                      .Select(p => p.Name)
                      .ToList();
 
         // Remove the control keys of the dictionary interface
-        StaticKeys.Remove("Keys");
-        StaticKeys.Remove("Values");
-        StaticKeys.Remove("Count");
-        StaticKeys.Remove("IsReadOnly");
-        StaticKeys.Remove("Item");
+        _staticKeys.Remove("Keys");
     }
 
     /// <summary>
@@ -65,133 +65,6 @@ public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<str
     [JsonPropertyName("_sockets")]
     [NotMapped]
     public Dictionary<string, ResourcSocket> Sockets { get; internal set; }
-
-    /// <summary>
-    /// Gets a collection containing the keys of the <see cref="T:System.Collections.Generic.IDictionary`2"></see>.
-    /// </summary>
-    public ICollection<string> Keys
-    {
-        get 
-        { 
-            List<string> keys = new List<string>(StaticKeys); 
-            keys.AddRange(DynamicProperties.Keys); 
-            return keys; 
-        }
-    }
-
-    /// <summary>
-    /// Gets a collection containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2"></see>.
-    /// </summary>
-    public ICollection<object?> Values
-    {
-        get
-        {
-            List<object?> values = new List<object?>();
-
-            foreach (string key in StaticKeys)
-            {
-                values.Add(GetType().GetProperty(key)!.GetValue(this));
-            }
-
-            values.AddRange(DynamicProperties.Values);
-
-            return values;
-        }
-    }
-
-    /// <summary>
-    /// Gets the number of elements contained in the collection.
-    /// </summary>
-    public int Count => StaticKeys.Count + DynamicProperties.Keys.Count;
-
-    /// <summary>
-    /// Gets the dynamic properties.
-    /// </summary>
-    /// <value>
-    /// The dynamic properties.
-    /// </value>
-    internal Dictionary<string, object?> DynamicProperties { get; } = new Dictionary<string, object?>();
-
-    /// <summary>
-    /// Gets the static keys.
-    /// </summary>
-    /// <value>
-    /// The static keys.
-    /// </value>
-    internal List<string> StaticKeys { get; }
-
-    /// <summary>
-    /// Gets or sets the <see cref="System.Object"/> with the specified key.
-    /// </summary>
-    /// <value>
-    /// The <see cref="System.Object"/>.
-    /// </value>
-    /// <param name="key">The key.</param>
-    /// <returns>The object.</returns>
-    public object? this[string key] 
-    { 
-        get
-        {
-            if (StaticKeys.Contains(key))
-            {
-                return GetType().GetProperty(key)!.GetValue(this);
-            }
-            else
-            {
-                return DynamicProperties[key];
-            }
-        }
-        set
-        {
-            if (StaticKeys.Contains(key))
-            {
-                GetType().GetProperty(key)!.SetValue(this, value);
-            }
-            else
-            {
-                DynamicProperties[key] = value;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gets a specific key and tries to convert the value to an integer.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <returns>The value converted to integer.</returns>
-    public int GetAsInt(string key)
-    {
-        object? value = this[key];
-
-        if (value != null) return Convert.ToInt32(value);
-        else throw new ArgumentNullException(nameof(value));
-    }
-
-    /// <summary>
-    /// Gets a specific key and tries to convert the value to a double.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <returns>The value converted to double.</returns>
-    public double GetAsDouble(string key)
-    {
-        object? value = this[key];
-
-        if (value != null) return Convert.ToDouble(value);
-        else throw new ArgumentNullException(nameof(value));
-    }
-
-    /// <summary>
-    /// Gets a specific key and tries to cast the value to a list of dynamic resources.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <returns>The value casted to a list of dynamic resources.</returns>
-    public IEnumerable<DynamicResource?> GetAsResourceList(string key)
-    {
-        object? value = this[key];
-
-        if (value != null) return ((IEnumerable<object?>)value).Select(e => (DynamicResource?)e);
-        else throw new ArgumentNullException(nameof(value));
-    }
 
     /// <summary>
     /// Adds a link.
@@ -248,137 +121,52 @@ public abstract class ResourceBase : DynamicObject, IEnumerable<KeyValuePair<str
     }
 
     /// <summary>
-    /// Tries to get a dynamic member.
+    /// Gets a collection containing the keys of the <see cref="T:System.Collections.Generic.IDictionary`2"></see>.
     /// </summary>
-    /// <param name="binder">The binder.</param>
-    /// <param name="result">The result.</param>
-    /// <returns>true if the member could be retrieved; otherwise, false.</returns>
-    public override bool TryGetMember(GetMemberBinder binder, out object? result)
+    public ICollection<string> Keys { get => _staticKeys; }
+
+    /// <summary>
+    /// Gets the static keys.
+    /// </summary>
+    /// <value>
+    /// The static keys.
+    /// </value>
+    ICollection<string> IResource.StaticKeys { get => _staticKeys; }
+
+    // The couterpart to the explicit interface implementation
+    private ICollection<string> StaticKeys { get => _staticKeys; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="System.Object"/> with the specified key.
+    /// </summary>
+    /// <value>
+    /// The <see cref="System.Object"/>.
+    /// </value>
+    /// <param name="key">The key.</param>
+    /// <returns>The object.</returns>
+    public object? this[string key]
     {
-        if (Keys.Contains(binder.Name))
+        get
         {
-            result = this[binder.Name];
-            return true;
+            if (StaticKeys.Contains(key))
+            {
+                return GetType().GetProperty(key)!.GetValue(this);
+            }
+            else
+            {
+                throw new KeyNotFoundException($"Key {key} does not exist on this instance.");
+            }
         }
-
-        result = null;
-        return false;
-    }
-
-    /// <summary>
-    /// Tries to set a dynamic member.
-    /// </summary>
-    /// <param name="binder">The binder.</param>
-    /// <param name="value">the value to set.</param>
-    /// <returns>
-    /// true if the member could be set; otherwise, false.
-    /// </returns>
-    public override bool TrySetMember(SetMemberBinder binder, object? value)
-    {
-        this[binder.Name] = value;
-        return true;
-    }
-
-    /// <summary>
-    /// Returns the enumeration of all dynamic member names.
-    /// </summary>
-    /// <returns>
-    /// A sequence that contains dynamic member names.
-    /// </returns>
-    public override IEnumerable<string> GetDynamicMemberNames()
-    {
-        return DynamicProperties.Keys;
-    }
-
-    /// <summary>
-    /// Adds an element with the provided key and value to the collection.
-    /// </summary>
-    /// <param name="key">The object to use as the key of the element to add.</param>
-    /// <param name="value">The object to use as the value of the element to add.</param>
-    public void Add(string key, object value)
-    {
-        if (Keys.Contains(key))
+        set
         {
-            throw new ArgumentException("An item with the same key has already been added. Key: " + key);
+            if (StaticKeys.Contains(key))
+            {
+                GetType().GetProperty(key)!.SetValue(this, value);
+            }
+            else
+            {
+                throw new KeyNotFoundException($"Key {key} does not exist on this instance.");
+            }
         }
-
-        DynamicProperties.Add(key, value);
-    }
-
-    /// <summary>
-    /// Determines whether the dictionary contains an element with the specified key.
-    /// </summary>
-    /// <param name="key">The key to locate in the dictionary.</param>
-    /// <returns>
-    /// true if the dictionary contains an element with the key; otherwise, false.
-    /// </returns>
-    public bool ContainsKey(string key)
-    {
-        return Keys.Contains(key);
-    }
-
-    /// <summary>
-    /// Removes the element with the specified key from the dictionary.
-    /// </summary>
-    /// <param name="key">The key of the element to remove.</param>
-    /// <returns>
-    /// true if the element is successfully removed; otherwise, false.  This method also returns false if 
-    /// <paramref name="key">key</paramref> was not found in the dynamic properties. It throws an exception if 
-    /// you try to remove a static key.
-    /// </returns>
-    /// <exception cref="System.ArgumentException">Static keys can not be removed. Key: " + key</exception>
-    public bool Remove(string key)
-    {
-        if(StaticKeys.Contains(key))
-        {
-            throw new ArgumentException("Static keys can not be removed. Key: " + key);
-        }
-
-        return DynamicProperties.Remove(key);
-    }
-
-    /// <summary>
-    /// Gets the value associated with the specified key.
-    /// </summary>
-    /// <param name="key">The key whose value to get.</param>
-    /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise,
-    /// the default value for the type of the value parameter.</param>
-    /// <returns>
-    /// true if the object contains an element with the specified key; otherwise, false.
-    /// </returns>
-    public bool TryGetValue(string key, out object? value)
-    {
-        if (Keys.Contains(key))
-        {
-            value = this[key];
-            return true;
-        }
-        else
-        {
-            value = null;
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Returns an enumerator that iterates through the collection.
-    /// </summary>
-    /// <returns>
-    /// An enumerator that can be used to iterate through the collection.
-    /// </returns>
-    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
-    {
-        return new ResourceEnumerator(this);
-    }
-
-    /// <summary>
-    /// Returns an enumerator that iterates through a collection.
-    /// </summary>
-    /// <returns>
-    /// An <see cref="T:System.Collections.IEnumerator"></see> object that can be used to iterate through the collection.
-    /// </returns>
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
     }
 }

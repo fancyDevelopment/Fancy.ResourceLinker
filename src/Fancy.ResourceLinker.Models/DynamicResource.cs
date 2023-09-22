@@ -6,5 +6,5 @@
 /// <remarks>
 /// Can be used to create ad hoc resources dynamically at run time.
 /// </remarks>
-public sealed class DynamicResource : ResourceBase
+public sealed class DynamicResource : DynamicResourceBase
 { }

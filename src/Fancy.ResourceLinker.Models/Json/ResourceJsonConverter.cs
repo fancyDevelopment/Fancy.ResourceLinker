@@ -10,7 +10,7 @@ namespace Fancy.ResourceLinker.Models.Json;
 /// </summary>
 /// <typeparam name="T">The concrete type of the resource to convert.</typeparam>
 /// <seealso cref="System.Text.Json.Serialization.JsonConverter{T}" />
-public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase
+public class ResourceJsonConverter<T> : JsonConverter<T> where T : class, IResource
 {
     /// <summary>
     /// The a flag to indicate weather the converter shall write json private fields.
@@ -121,22 +121,21 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase
         {
             writer.WriteStartObject();
 
-            // Step through each key add it to json
-            foreach (var pair in value)
+            // Step through each key and add it to json
+            foreach (string key in value.Keys)
             {
                 // If the current attribute is a static attribute with json ignore, just continue
-                PropertyInfo? staticPropertyInfo = value.GetType().GetProperty(pair.Key);
+                PropertyInfo? staticPropertyInfo = value.GetType().GetProperty(key);
                 if (staticPropertyInfo != null && Attribute.IsDefined(staticPropertyInfo, typeof(JsonIgnoreAttribute))) continue;
 
-                string key = pair.Key;
-                key = char.ToLower(key[0]) + key.Substring(1);
-                if (key == "links" || key == "actions" || key == "sockets")
+                string jsonKey = char.ToLower(key[0]) + key.Substring(1);
+                if (key == "Links" || key == "Actions" || key == "Sockets")
                 {
-                    key = "_" + key;
+                    jsonKey = "_" + jsonKey;
 
                     if (_ignoreEmptyMetadata)
                     {
-                        IDictionary? metadataDictionary = pair.Value as IDictionary;
+                        IDictionary? metadataDictionary = value[key] as IDictionary;
                         if (metadataDictionary != null && metadataDictionary.Count == 0)
                         {
                             continue;
@@ -146,8 +145,8 @@ public class ResourceJsonConverter<T> : JsonConverter<T> where T: ResourceBase
 
                 if (key.StartsWith("_") && !_writePrivates) continue;
 
-                writer.WritePropertyName(key);
-                JsonSerializer.Serialize(writer, pair.Value, options);
+                writer.WritePropertyName(jsonKey);
+                JsonSerializer.Serialize(writer, value[key], options);
             }
 
             writer.WriteEndObject();

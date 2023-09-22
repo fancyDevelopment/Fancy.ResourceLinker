@@ -40,7 +40,7 @@ public class ResourceJsonConverterFactory : JsonConverterFactory
     /// </returns>
     public override bool CanConvert(Type typeToConvert)
     {
-        return typeToConvert.IsSubclassOf(typeof(ResourceBase));
+        return typeToConvert.IsAssignableTo(typeof(IResource));
     }
 
     /// <summary>

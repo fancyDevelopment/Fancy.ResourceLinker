@@ -1,6 +1,5 @@
 using Fancy.ResourceLinker.Models.Json;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Fancy.ResourceLinker.Models.ITest;
@@ -9,7 +8,7 @@ namespace Fancy.ResourceLinker.Models.ITest;
 /// A object used to test the serialization.
 /// </summary>
 /// <seealso cref="Fancy.ResourceLinker.Models.ResourceBase" />
-class TestObject : ResourceBase
+class TestObject : DynamicResourceBase
 {
     public int IntProperty { get; set; } = 5;
     public string StringProperty { get; set; } = "foobar";
@@ -18,7 +17,7 @@ class TestObject : ResourceBase
     public string IgnoredStaticProperty { get; set; } = "foo";
 }
 
-class NonPubCtorTestObject : ResourceBase
+class NonPubCtorTestObject : DynamicResourceBase
 {
     private NonPubCtorTestObject() { }
     public int IntProperty { get; set; } = 5;
@@ -55,7 +54,7 @@ public class DynamicResourceSerializerTests
     public void DeserializeAndSerializeComplexObject()
     {
         JsonSerializerOptions serializerOptions = new JsonSerializerOptions();
-        serializerOptions.AddResourceConverter(false, false);
+        serializerOptions.AddResourceConverter();
 
         dynamic deserializedObject = JsonSerializer.Deserialize<DynamicResource>(TEST_DATA, serializerOptions)!;
 

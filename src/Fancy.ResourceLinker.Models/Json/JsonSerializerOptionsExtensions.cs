@@ -13,7 +13,7 @@ public static class JsonSerializerOptionsExtensions
     /// <param name="options">The options.</param>
     /// <param name="ignoreEmptyMetadata">if set to <c>true</c> ignores empty metadata fields.</param>
     /// <param name="writePrivates">Specifies is fields which stats with '_' shall be read an written.</param>
-    public static void AddResourceConverter(this JsonSerializerOptions options, bool ignoreEmptyMetadata = false, bool writePrivates = true)
+    public static void AddResourceConverter(this JsonSerializerOptions options, bool ignoreEmptyMetadata = true, bool writePrivates = true)
     {
         options.Converters.Add(new ResourceJsonConverterFactory(writePrivates, ignoreEmptyMetadata));
     }

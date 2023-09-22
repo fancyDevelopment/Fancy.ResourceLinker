@@ -3,6 +3,7 @@ using Fancy.ResourceLinker.Models;
 using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Text;
@@ -110,7 +111,7 @@ public class GatewayRouter
 
         if (_settings.ResourceProxy != null)
         {
-            request.Headers.Add("X-Resource-Proxy", _settings.ResourceProxy);
+            request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
         }
 
         if(sendAccessToken)
@@ -236,7 +237,7 @@ public class GatewayRouter
 
         if (_settings.ResourceProxy != null)
         {
-            proxyRequest.Headers.Add("X-Resource-Proxy", _settings.ResourceProxy);
+            proxyRequest.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
         }
 
         proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());

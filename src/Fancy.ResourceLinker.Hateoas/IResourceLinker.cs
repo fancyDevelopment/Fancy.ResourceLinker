@@ -14,7 +14,7 @@ public interface IResourceLinker
     /// <typeparam name="TResource">The type of resource to add links to.</typeparam>
     /// <param name="resource">The resource to add links to.</param>
     /// <param name="urlHelper">The URL helper.</param>
-    void AddLinks<TResource>(TResource resource, IUrlHelper urlHelper) where TResource : ResourceBase;
+    void AddLinks<TResource>(TResource resource, IUrlHelper urlHelper) where TResource : IResource;
 
     /// <summary>
     /// Adds links to a collection of resources using a link strategy.
@@ -22,5 +22,5 @@ public interface IResourceLinker
     /// <typeparam name="TResource">The type of resource to add links to.</typeparam>
     /// <param name="resources">The resources to add links to.</param>
     /// <param name="urlHelper">The URL helper.</param>
-    void AddLinks<TResource>(IEnumerable<TResource> resources, IUrlHelper urlHelper) where TResource : ResourceBase;
+    void AddLinks<TResource>(IEnumerable<TResource> resources, IUrlHelper urlHelper) where TResource : IResource;
 }

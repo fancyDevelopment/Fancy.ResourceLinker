@@ -14,7 +14,7 @@ public static class ControllerExtensions
     /// <typeparam name="TResource">The type of resource to link.</typeparam>
     /// <param name="controller">The controller responding to a http call.</param>
     /// <param name="resource">The resource to link.</param>
-    public static void LinkResource<TResource>(this ControllerBase controller, TResource resource) where TResource : ResourceBase
+    public static void LinkResource<TResource>(this ControllerBase controller, TResource resource) where TResource : IResource
     {
         IResourceLinker? resourceLinker = controller.HttpContext.RequestServices.GetService(typeof (IResourceLinker)) as IResourceLinker;
 
@@ -32,7 +32,7 @@ public static class ControllerExtensions
     /// <typeparam name="TResource">The type of resource to link.</typeparam>
     /// <param name="controller">The controller responding to a http call.</param>
     /// <param name="resources">The resources to link.</param>
-    public static void LinkResources<TResource>(this ControllerBase controller, IEnumerable<TResource> resources) where TResource : ResourceBase
+    public static void LinkResources<TResource>(this ControllerBase controller, IEnumerable<TResource> resources) where TResource : IResource
     {
         IResourceLinker? resourceLinker = controller.HttpContext.RequestServices.GetService(typeof(IResourceLinker)) as IResourceLinker;
 

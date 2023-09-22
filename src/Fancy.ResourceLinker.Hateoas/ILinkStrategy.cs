@@ -24,5 +24,5 @@ public interface ILinkStrategy
     /// <param name="resource">The resource to link.</param>
     /// <param name="urlHelper">The URL helper.</param>
     /// <exception cref="System.ArgumentException">Resource as wrong type;resource</exception>
-    void LinkResource(ResourceBase resource, IUrlHelper urlHelper);
+    void LinkResource(IResource resource, IUrlHelper urlHelper);
 }

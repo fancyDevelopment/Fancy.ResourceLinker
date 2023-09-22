@@ -27,7 +27,7 @@ public abstract class LinkStrategyBase<T> : ILinkStrategy where T : class
     /// </summary>
     /// <param name="resource">The resource to link.</param>
     /// <param name="urlHelper">The URL helper.</param>
-    public void LinkResource(ResourceBase resource, IUrlHelper urlHelper)
+    public void LinkResource(IResource resource, IUrlHelper urlHelper)
     {
         T? typedResource = resource as T;
 

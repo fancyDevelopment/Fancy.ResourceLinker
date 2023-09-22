@@ -29,7 +29,7 @@ public class ResourceLinker : IResourceLinker
     /// <typeparam name="TResource">The type of resource to add links to.</typeparam>
     /// <param name="resource">The resource to add links to.</param>
     /// <param name="urlHelper">The URL helper.</param>
-    public void AddLinks<TResource>(TResource resource, IUrlHelper urlHelper) where TResource : ResourceBase
+    public void AddLinks<TResource>(TResource resource, IUrlHelper urlHelper) where TResource : IResource
     {
         if (resource == null)
         {
@@ -68,9 +68,9 @@ public class ResourceLinker : IResourceLinker
     /// <typeparam name="TResource">The type of resource to add links to.</typeparam>
     /// <param name="resources">The resources to add links to.</param>
     /// <param name="urlHelper">The URL helper.</param>
-    public void AddLinks<TResource>(IEnumerable<TResource> resources, IUrlHelper urlHelper) where TResource : ResourceBase
+    public void AddLinks<TResource>(IEnumerable<TResource> resources, IUrlHelper urlHelper) where TResource : IResource
     {
-        foreach (ResourceBase resource in resources)
+        foreach (IResource resource in resources)
         {
             AddLinks(resource, urlHelper);
         }
@@ -81,7 +81,7 @@ public class ResourceLinker : IResourceLinker
     /// </summary>
     /// <param name="resource">The resource to link.</param>
     /// <param name="urlHelper">The URL helper to use to build the links.</param>
-    private void LinkObject(ResourceBase resource, IUrlHelper urlHelper)
+    private void LinkObject(IResource resource, IUrlHelper urlHelper)
     {
         ILinkStrategy? linkStrategy = _linkStrategies.FirstOrDefault(ls => ls.CanLinkType(resource.GetType()));
 

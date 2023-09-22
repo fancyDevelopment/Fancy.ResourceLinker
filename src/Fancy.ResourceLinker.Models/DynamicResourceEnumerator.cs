@@ -5,12 +5,12 @@ namespace Fancy.ResourceLinker.Models;
 /// <summary>
 /// An enumerator to enumerator through all keys of a <see cref="ResourceBase"/>.
 /// </summary>
-public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object?>>
+public class DynamicResourceEnumerator : IEnumerator<KeyValuePair<string, object?>>
 {
     /// <summary>
     /// The resource to enumerate.
     /// </summary>
-    private ResourceBase _resource;
+    private DynamicResourceBase _resource;
 
     /// <summary>
     /// The current element.
@@ -33,10 +33,10 @@ public class ResourceEnumerator : IEnumerator<KeyValuePair<string, object?>>
     object IEnumerator.Current => _current;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResourceEnumerator"/> class.
+    /// Initializes a new instance of the <see cref="DynamicResourceEnumerator"/> class.
     /// </summary>
     /// <param name="resorce">The resorce.</param>
-    public ResourceEnumerator(ResourceBase resorce)
+    public DynamicResourceEnumerator(DynamicResourceBase resorce)
     {
         _resource = resorce;
     }

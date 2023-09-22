@@ -1,24 +1,29 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Fancy.ResourceLinker.Models.Json;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace Fancy.ResourceLinker.Hateoas;
 
 /// <summary>
-/// Extension class with helper to easily register resource linker to ioc container.
+/// Extension class with helper to easily register resource linker to ioc controller service.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class IMvcBuilderExtensions
 {
     /// <summary>
     /// Adds the resource linker hateoas feature to the ioc container.
     /// </summary>
-    /// <param name="serviceCollection">The service collection to add the resource linker to.</param>
+    /// <param name="mvcBuilder">The mvc builder to add the resource linker to.</param>
     /// <param name="assemblies">The assemblies to search for <see cref="ILinkStrategy"/> implementations to use to link resources.</param>
     /// <returns>
     /// The service collection.
     /// </returns>
-    public static IServiceCollection AddHateoas(this IServiceCollection serviceCollection, params Assembly[] assemblies)
+    public static IMvcBuilder AddHateoas(this IMvcBuilder mvcBuilder, params Assembly[] assemblies)
     {
-        serviceCollection.AddTransient(typeof(IResourceLinker), typeof(ResourceLinker));
+        // Add required services
+        mvcBuilder.Services.AddTransient(typeof(IResourceLinker), typeof(ResourceLinker));
+
+        // Add resource converter
+        mvcBuilder.AddJsonOptions(options => options.JsonSerializerOptions.AddResourceConverter(true, true));
 
         // Find all link strategies in provided assemblies and register them
         foreach (Assembly assembly in assemblies)
@@ -27,25 +32,25 @@ public static class ServiceCollectionExtensions
 
             foreach (Type linkStrategy in linkStrategies)
             {
-                serviceCollection.AddTransient(typeof(ILinkStrategy), linkStrategy);
+                mvcBuilder.Services.AddTransient(typeof(ILinkStrategy), linkStrategy);
             }
         }
 
-        return serviceCollection;
+        return mvcBuilder;
     }
 
     /// <summary>
     /// Adds the resource linker hateoas feature to the ioc container and automatically searches the calling assembly for 
     /// implementation of <see cref="ILinkStrategy"/> to use to link resources.
     /// </summary>
-    /// <param name="serviceCollection">The service collection to add the resource linker to.</param>
+    /// <param name="mvcBuilder">The mvc builder to add the resource linker to.</param>
     /// <returns>
     /// The service collection.
     /// </returns>
-    public static IServiceCollection AddHateoas(this IServiceCollection serviceCollection)
+    public static IMvcBuilder AddHateoas(this IMvcBuilder mvcBuilder)
     {
         // Get the calling assembly and add the resource linker
         Assembly assembly = Assembly.GetCallingAssembly();
-        return AddHateoas(serviceCollection, assembly);
+        return AddHateoas(mvcBuilder, assembly);
     }
 }

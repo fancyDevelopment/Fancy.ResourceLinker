@@ -15,7 +15,7 @@ public class HypermediaController : ControllerBase
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="content">The content.</param>
     /// <returns>A linked object result.</returns>
-    public virtual IActionResult Hypermedia<TResource>(TResource content) where TResource : ResourceBase
+    public virtual IActionResult Hypermedia<TResource>(TResource content) where TResource : IResource
     {
         this.LinkResource(content);
         return new ObjectResult(content);
@@ -27,7 +27,7 @@ public class HypermediaController : ControllerBase
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="content">The content.</param>
     /// <returns>A linked object result.</returns>
-    public virtual IActionResult Hypermedia<TResource>(IEnumerable<TResource> content) where TResource : ResourceBase
+    public virtual IActionResult Hypermedia<TResource>(IEnumerable<TResource> content) where TResource : IResource
     {
         this.LinkResources(content);
         return new ObjectResult(content);
