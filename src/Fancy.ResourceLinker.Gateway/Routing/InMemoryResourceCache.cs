@@ -20,7 +20,7 @@ public class InMemoryResourceCache : IResourceCache
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="key">The key to save the resource under.</param>
     /// <param name="resource">The resource instance to save.</param>
-    public void Write<TResource>(string key, TResource resource) where TResource : ResourceBase
+    public void Write<TResource>(string key, TResource resource) where TResource : class
     {
         _cache[key] = new Tuple<DateTime, object>(DateTime.Now, resource);
     }
@@ -35,9 +35,9 @@ public class InMemoryResourceCache : IResourceCache
     /// <returns>
     /// True if the cache was able to read and provide a valid resource instance; otherwise, false.
     /// </returns>
-    public bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource? resource) where TResource : ResourceBase
+    public bool TryRead<TResource>(string key, TimeSpan maxResourceAge, out TResource? resource) where TResource : class
     {
-        resource = null;
+        resource = default;
 
         // Check if the key exists within the cache
         if (_cache.ContainsKey(key))
