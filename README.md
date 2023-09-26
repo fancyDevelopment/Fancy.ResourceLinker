@@ -1,11 +1,44 @@
 # Fancy.ResourceLinker
 A library to easily create API Gateways and Backend for Frontends (BFF) based on ASP.NET Core.
 
+## Why an api Gateway/Backend for Frontend
+If you need to access multiple backend systems from a single frontend, then it is often better the frontend has a 
+single system it communicates with and which is also located closer to the backend systems instead of letting the frontend 
+communicate with each single backend directly. The following picture depicts this connstellation.
+
+![architecture](architecture.drawio.png)
+
+The advantages you get if you use the API Gateway or Backend for Frontend pattern are:
+
+- **Loose Coupling**
+  - The host urls, routes and api endpoints of the backend system can be changed independently of the client. If there are breaking
+    changes, they can be compensated within the API Gateway.
+- **Enhanced Performance**
+  - If you need to call multiple backend systems to fill a single view in your frontend, this task can usually be performed faster and 
+    more efficiently on server systems. Furthermore, the API Gateway is closer to the backend and therefore it has a smaller latency.
+  - If there is data which does not need to be retrieved with each request, you can easily cache data within the API Gateway which 
+    makes responses faster and saves load on backend.
+  - If your API Gateway knows about each single view of your frontend, then we talk about a Backend for Frontend. A Backend for Frontend
+    can create optimized responses for your frontend. The goal is that a frontend makes one request per view to initially fill a view. 
+    This saves payload on the route from frontend to gateway which has typically a smaller bandwidth.
+- **Improved Security**
+  - If you publis all api endpoints of all backends in one api gateway, you have them availalbe under the same orign. Your backends systems
+    are not available directly which and you have only one point left where you have to care about security. 
+  - You can run OAuth authorization flows server side at the API Gateway which means that tokens are also available only on server side. 
+    Handling tokens on the client side is not recommended or even allowed by the security standards. Shifting this to server side makes 
+    your application more secure.
+
+## Features
 With Fancy Resource Linker you can easily add the following features to your API Gateway: 
 
 - **Data Aggregation** 
 
   Aggregate data from different sources (e.g. different Microservices) into view models which are optimized for your client. Reduce the calls of the client to the backend by filling an entire view in your client with a single request and thus boosting your client side user experience.
+
+- **Data Caching**
+  
+  Cache data you received from backend system within your API Gateway to make following requests faster and save load on the backend
+  system.
 
 - **Reverse Proxy**
   
@@ -19,6 +52,8 @@ With Fancy Resource Linker you can easily add the following features to your API
   
   Let your gateway act as a single authentication facade to all of your resources behind, running OAuth flows server side and keeping tokens also only server side to obtain the maximum security and comply to all current security standards.
 
+## Sample Application
+There is a sample application [Fancy.ResourceLinker-Sample](https://github.com/fancyDevelopment/Fancy.ResourceLinker-Sample) which demonstrates all the features of this library. Have a look to it to see how the individual fetures can be used.
 
 ## Getting Started
 
