@@ -258,7 +258,7 @@ public class GatewayRouter
 
         return SendAsync(request, sendAccessToken);
     }
-
+    
     /// <summary>
     /// Post data to a specific uri.
     /// </summary>
@@ -269,6 +269,39 @@ public class GatewayRouter
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return PostAsync(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+    }
+
+    /// <summary>
+    /// Post data to a specific uri and return the result deserialized into the specified resource type.</returns>.
+    /// </summary>
+    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <param name="content">The content to send - will be serialized as json.</param>
+    /// <returns>The result deserialized into the specified resource type.</returns>
+    private Task<TResource?> PostAsync<TResource>(Uri requestUri, object content, bool sendAccessToken) where TResource : class
+    {
+        // Set up request
+        HttpRequestMessage request = new HttpRequestMessage()
+        {
+            RequestUri = requestUri,
+            Method = HttpMethod.Post,
+            Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
+        };
+
+        return SendAsync<TResource>(request, sendAccessToken);
+    }
+
+    /// <summary>
+    /// Post data to a specific uri and return the result deserialized into the specified resource type.</returns>.
+    /// </summary>
+    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <param name="content">The content to send - will be serialized as json.</param>
+    /// <returns>The result deserialized into the specified resource type.</returns>
+    public Task<TResource?> PostAsync<TResource>(string routeKey, string relativeUrl, object content) where TResource : class
+    {
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
+        return PostAsync<TResource>(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
     }
 
     /// <summary>
