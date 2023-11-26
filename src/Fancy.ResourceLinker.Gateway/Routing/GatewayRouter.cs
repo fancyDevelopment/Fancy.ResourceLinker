@@ -122,7 +122,7 @@ public class GatewayRouter
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="request">The request to send.</param>
-    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
     private async Task<TResource?> SendAsync<TResource>(HttpRequestMessage request, bool sendAccessToken) where TResource : class
     {
@@ -155,7 +155,7 @@ public class GatewayRouter
     /// Sends a request.
     /// </summary>
     /// <param name="request">The request to send.</param>
-    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     private async Task SendAsync(HttpRequestMessage request, bool sendAccessToken)
     {
         if (_settings.ResourceProxy != null)
@@ -178,7 +178,7 @@ public class GatewayRouter
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri of the data to get.</param>
-    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
     private async Task<TResource> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
     {
@@ -214,7 +214,7 @@ public class GatewayRouter
     /// </summary>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     private Task PutAsync(Uri requestUri, object content, bool sendAccessToken)
     { 
         // Set up request
@@ -243,9 +243,10 @@ public class GatewayRouter
     /// <summary>
     /// Puts data to a specific uri.
     /// </summary>
+    /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
     private Task<TResource?> PutAsync<TResource>(Uri requestUri, object content, bool sendAccessToken) where TResource: class
     {
@@ -263,6 +264,7 @@ public class GatewayRouter
     /// <summary>
     /// Puts data to a specific uri.
     /// </summary>
+    /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="routeKey">The key of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
@@ -279,7 +281,7 @@ public class GatewayRouter
     /// </summary>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     private Task PostAsync(Uri requestUri, object content, bool sendAccessToken)
     {
         // Set up request
@@ -308,9 +310,10 @@ public class GatewayRouter
     /// <summary>
     /// Post data to a specific uri and return the result deserialized into the specified resource type.</returns>.
     /// </summary>
-    /// <param name="routeKey">The key of the route to use.</param>
-    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <typeparam name="TResource">The type of the resource.</typeparam>
+    /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
     private Task<TResource?> PostAsync<TResource>(Uri requestUri, object content, bool sendAccessToken) where TResource : class
     {
@@ -328,6 +331,7 @@ public class GatewayRouter
     /// <summary>
     /// Post data to a specific uri and return the result deserialized into the specified resource type.</returns>.
     /// </summary>
+    /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="routeKey">The key of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
@@ -336,6 +340,66 @@ public class GatewayRouter
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return PostAsync<TResource>(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+    }
+
+    /// <summary>
+    /// Delete data from a specific URI
+    /// </summary>
+    /// <param name="requestUri">The uri to send to.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    private Task DeleteAsync(Uri requestUri, bool sendAccessToken)
+    {
+        // Set up request
+        HttpRequestMessage request = new HttpRequestMessage()
+        {
+            RequestUri = requestUri,
+            Method = HttpMethod.Delete,
+        };
+
+        return SendAsync(request, sendAccessToken);
+    }
+
+    /// <summary>
+    /// Delete data from a specific URI
+    /// </summary>
+    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    public Task DeleteAsync(string routeKey, string relativeUrl)
+    {
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
+        return DeleteAsync(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
+    }
+
+    /// <summary>
+    /// Delete data from a specific URI and return the result deserialized into the specified resource type.
+    /// </summary>
+    /// <typeparam name="TResource">The type of the resource.</typeparam>
+    /// <param name="requestUri">The uri to send to.</param>
+    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    /// <returns>The result deserialized into the specified resource type.</returns>
+    private Task<TResource?> DeleteAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
+    {
+        // Set up request
+        HttpRequestMessage request = new HttpRequestMessage()
+        {
+            RequestUri = requestUri,
+            Method = HttpMethod.Delete,
+        };
+
+        return SendAsync<TResource>(request, sendAccessToken);
+    }
+
+    /// <summary>
+    /// Delete data from a specific URI and return the result deserialized into the specified resource type.
+    /// </summary>
+    /// <typeparam name="TResource">The type of the resource.</typeparam>
+    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <returns>The result deserialized into the specified resource type.</returns>
+    public Task<TResource?> DeleteAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
+    {
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
+        return DeleteAsync<TResource>(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
     }
 
     /// <summary>
