@@ -110,8 +110,15 @@ internal sealed class GatewayAuthentication
 
                 if (!string.IsNullOrWhiteSpace(tokenSessionId) && context.Principal != null)
                 {
-                    var sessionIdClaim = new Claim("TokenSessionId", tokenSessionId);
-                    var uniqueNameClaim = context.Principal.Claims.Single(c => c.Type == settings.UniqueIdentifierClaimType);
+                    Claim sessionIdClaim = new Claim("TokenSessionId", tokenSessionId);
+                    Claim? uniqueNameClaim = context.Principal.Claims.SingleOrDefault(c => c.Type == settings.UniqueIdentifierClaimType);
+
+                    if(uniqueNameClaim == null)
+                    {
+                        ILogger logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<GatewayAuthentication>>();
+                        logger.LogError($"No claim was found with the specified unique identifier type '{settings.UniqueIdentifierClaimType}'");
+                        throw new Exception($"No claim was found with the specified unique identifier type '{settings.UniqueIdentifierClaimType}'");
+                    }
 
                     // Setup a new default identity which only contians the token session id
                     context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { sessionIdClaim, uniqueNameClaim }, context.Principal?.Identity?.AuthenticationType, settings.UniqueIdentifierClaimType, null));
