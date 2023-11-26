@@ -241,6 +241,40 @@ public class GatewayRouter
     }
 
     /// <summary>
+    /// Puts data to a specific uri.
+    /// </summary>
+    /// <param name="requestUri">The uri to send to.</param>
+    /// <param name="content">The content to send - will be serialized as json.</param>
+    /// <param name="sendAccessToken">I true, the request will be enriched with an access token.</param>
+    /// <returns>The result deserialized into the specified resource type.</returns>
+    private Task<TResource?> PutAsync<TResource>(Uri requestUri, object content, bool sendAccessToken) where TResource: class
+    {
+        // Set up request
+        HttpRequestMessage request = new HttpRequestMessage()
+        {
+            RequestUri = requestUri,
+            Method = HttpMethod.Put,
+            Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
+        };
+
+        return SendAsync<TResource>(request, sendAccessToken);
+    }
+
+    /// <summary>
+    /// Puts data to a specific uri.
+    /// </summary>
+    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <param name="content">The content to send - will be serialized as json.</param>
+    /// <returns>The result deserialized into the specified resource type.</returns>
+    public Task<TResource?> PutAsync<TResource>(string routeKey, string relativeUrl, object content) where TResource: class
+    {
+        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
+        return PutAsync<TResource>(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+    }
+
+
+    /// <summary>
     /// Post data to a specific uri.
     /// </summary>
     /// <param name="requestUri">The uri to send to.</param>
