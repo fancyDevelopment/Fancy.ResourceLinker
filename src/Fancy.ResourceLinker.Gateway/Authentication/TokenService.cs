@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 

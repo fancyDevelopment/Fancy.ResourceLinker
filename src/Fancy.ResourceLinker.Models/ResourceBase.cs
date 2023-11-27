@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Dynamic;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -133,7 +132,7 @@ public abstract class ResourceBase : IResource
     /// </value>
     ICollection<string> IResource.StaticKeys { get => _staticKeys; }
 
-    // The couterpart to the explicit interface implementation
+    // The couterpart to the explicit interface implementation to make it accessible within the class
     private ICollection<string> StaticKeys { get => _staticKeys; }
 
     /// <summary>

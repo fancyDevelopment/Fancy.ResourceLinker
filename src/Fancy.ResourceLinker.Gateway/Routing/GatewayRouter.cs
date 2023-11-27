@@ -1,9 +1,7 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
-using Fancy.ResourceLinker.Models;
 using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Text;
@@ -140,14 +138,14 @@ public class GatewayRouter
         HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
         responseMessage.EnsureSuccessStatusCode();
 
-        if (responseMessage.Content.Headers.ContentLength > 0)// responseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+        if (responseMessage.Content.Headers.ContentLength > 0)
         {
             string jsonResponse = await responseMessage.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<TResource>(jsonResponse, _serializerOptions) ?? throw new Exception("Error on deserialization of result");
         }
         else
         {
-            return default;// throw new Exception("No Content was provided by the server");
+            return default;
         }
     }
 
@@ -274,7 +272,6 @@ public class GatewayRouter
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
         return PutAsync<TResource>(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
     }
-
 
     /// <summary>
     /// Post data to a specific uri.
