@@ -64,6 +64,14 @@ internal sealed class GatewayAuthentication
         })
         .AddOpenIdConnect(options =>
         {
+            HttpClient defaultBackchannel = new HttpClient();
+
+            if (settings.Authority.StartsWith("https://login.microsoftonline.com"))
+            {
+                // Add an origin header because it is expected by Microsoft Entra Id (the value of the header doesn't matter)
+                defaultBackchannel.DefaultRequestHeaders.Add("Origin", "Fancy.ResourceLinker.Gateway");
+            }
+
             options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.Authority = settings.Authority;
             options.ClientId = settings.ClientId;
@@ -76,6 +84,7 @@ internal sealed class GatewayAuthentication
             options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
             options.RequireHttpsMetadata = false;
             options.TokenValidationParameters.NameClaimType = settings.UniqueIdentifierClaimType;
+            options.Backchannel = defaultBackchannel;
 
             options.Scope.Clear();
             foreach (string scope in settings.AuthorizationCodeScopes.Split(' '))
