@@ -22,7 +22,7 @@ public abstract class ResourceBase : IResource
         // Initialize metadata dictionaries
         Links = new Dictionary<string, ResourceLink>();
         Actions = new Dictionary<string, ResourceAction>();
-        Sockets = new Dictionary<string, ResourcSocket>();
+        Sockets = new Dictionary<string, ResourceSocket>();
 
         // Get all static (compile time) properties of this type
         _staticKeys = GetType()
@@ -63,7 +63,7 @@ public abstract class ResourceBase : IResource
     /// </value>
     [JsonPropertyName("_sockets")]
     [NotMapped]
-    public Dictionary<string, ResourcSocket> Sockets { get; internal set; }
+    public Dictionary<string, ResourceSocket> Sockets { get; internal set; }
 
     /// <summary>
     /// Adds a link.
@@ -95,7 +95,7 @@ public abstract class ResourceBase : IResource
     /// <param name="token">The token.</param>
     public void AddSocket(string rel, string href, string method, string token)
     {
-        Sockets[rel] = new ResourcSocket(href, method, token);
+        Sockets[rel] = new ResourceSocket(href, method, token);
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public abstract class ResourceBase : IResource
     /// <param name="method">The method.</param>
     public void AddSocket(string rel, string href, string method)
     {
-        Sockets.Add(rel, new ResourcSocket(href, method));
+        Sockets.Add(rel, new ResourceSocket(href, method));
     }
 
     /// <summary>

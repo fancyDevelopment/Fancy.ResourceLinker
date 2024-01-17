@@ -3,14 +3,14 @@
 /// <summary>
 /// Contains information regarding a socket which can be used to implement server to client messaging onto a resource.
 /// </summary>
-public class ResourcSocket
+public class ResourceSocket
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResourcSocket" /> class.
+    /// Initializes a new instance of the <see cref="ResourceSocket" /> class.
     /// </summary>
     /// <param name="href">The href.</param>
     /// <param name="method">The method.</param>
-    public ResourcSocket(string href, string method)
+    public ResourceSocket(string href, string method)
     {
         Href = href;
         Method = method;
@@ -18,12 +18,12 @@ public class ResourcSocket
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResourcSocket" /> class.
+    /// Initializes a new instance of the <see cref="ResourceSocket" /> class.
     /// </summary>
     /// <param name="href">The href.</param>
     /// <param name="method">The method.</param>
     /// <param name="token">The token.</param>
-    public ResourcSocket(string href, string method, string token)
+    public ResourceSocket(string href, string method, string token)
     {
         Href = href;
         Method = method;

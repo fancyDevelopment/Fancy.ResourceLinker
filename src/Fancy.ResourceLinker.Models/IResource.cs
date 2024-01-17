@@ -36,7 +36,7 @@ public interface IResource
     /// </value>
     [JsonPropertyName("_sockets")]
     [NotMapped]
-    Dictionary<string, ResourcSocket> Sockets { get; }
+    Dictionary<string, ResourceSocket> Sockets { get; }
 
     /// <summary>
     /// Adds a link.
