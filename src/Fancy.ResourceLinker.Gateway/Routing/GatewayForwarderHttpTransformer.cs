@@ -16,6 +16,11 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
     /// </summary>
     internal static readonly string SendAccessTokenItemKey = "SendAccessTokenItemKey";
 
+    /// <summary>
+    /// The target URL item key.
+    /// </summary>
+    internal static readonly string TargetUrlItemKey = "TargetUrlItemKey";
+
     public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
     {
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
@@ -28,6 +33,13 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
             if (tokenService == null) throw new InvalidOperationException($"If 'EnforceAuthentication' is 'true', gateway authentication must be configured.");
 
             proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await tokenService.GetAccessTokenAsync());
+        }
+
+        if(httpContext.Items.ContainsKey(TargetUrlItemKey))
+        {
+            // If an alternative target url ist provided use it
+            string? targetUrl = Convert.ToString(httpContext.Items[TargetUrlItemKey]);
+            if(targetUrl != null) proxyRequest.RequestUri = new Uri(targetUrl);
         }
         
         // Suppress the original request header, use the one from the destination Uri.

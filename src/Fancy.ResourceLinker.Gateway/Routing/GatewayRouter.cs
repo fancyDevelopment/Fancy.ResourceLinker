@@ -3,6 +3,8 @@ using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -21,14 +23,19 @@ public class GatewayRouter
     private readonly HttpClient _httpClient = new HttpClient();
 
     /// <summary>
+    /// The forwarder message invoker.
+    /// </summary>
+    private HttpMessageInvoker _forwarderMessageInvoker;
+
+    /// <summary>
     /// The forwarder request configuration.
     /// </summary>
-    private readonly ForwarderRequestConfig _forwarderRequestConfig = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(100) };
+    private readonly ForwarderRequestConfig _forwarderRequestConfig;
 
     /// <summary>
     /// The forwarder transformer.
     /// </summary>
-    private readonly HttpTransformer _forwarderTransformer = new GatewayForwarderHttpTransformer();
+    private readonly HttpTransformer _forwarderTransformer;
 
     /// <summary>
     /// The serializer options used to deserialize received json.
@@ -90,6 +97,21 @@ public class GatewayRouter
         _serializerOptions = new JsonSerializerOptions();
         _serializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         _serializerOptions.AddResourceConverter();
+
+        // Set up forwarder assets
+        _forwarderMessageInvoker = new HttpMessageInvoker(new SocketsHttpHandler()
+        {
+            UseProxy = false,
+            AllowAutoRedirect = false,
+            AutomaticDecompression = DecompressionMethods.None,
+            UseCookies = false,
+            ActivityHeadersPropagator = new ReverseProxyPropagator(DistributedContextPropagator.Current),
+            ConnectTimeout = TimeSpan.FromSeconds(15),
+        });
+
+        _forwarderRequestConfig = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(100) };
+
+        _forwarderTransformer = new GatewayForwarderHttpTransformer();
     }
 
     private async Task SetTokenToRequest(HttpRequestMessage request)
@@ -531,14 +553,22 @@ public class GatewayRouter
     /// </summary>
     /// <param name="httpContext">The HTTP context.</param>
     /// <param name="routeKey">The route key.</param>
-    public async Task ForwardAsync(HttpContext httpContext, string routeKey)
+    /// <param name="relativurl">The relativurl.</param>
+    public async Task ForwardAsync(HttpContext httpContext, string routeKey, string relativurl)
     {
-        string targetUrl = GetBaseUrl(routeKey);
+        string baseUrl = GetBaseUrl(routeKey);
+        Uri targetUrl = CombineUris(baseUrl, relativurl);
+
         httpContext.Items[GatewayForwarderHttpTransformer.SendAccessTokenItemKey] = _settings.Routes[routeKey].EnforceAuthentication;
+        httpContext.Items[GatewayForwarderHttpTransformer.TargetUrlItemKey] = targetUrl.AbsoluteUri;
 
         // Forward request to microservice
-        ForwarderError error = await _forwarder.SendAsync(httpContext, targetUrl, _httpClient, _forwarderRequestConfig, _forwarderTransformer);
-        
+        ForwarderError error = await _forwarder.SendAsync(httpContext, 
+                                                          routeKey, 
+                                                          _forwarderMessageInvoker, 
+                                                          _forwarderRequestConfig, 
+                                                          _forwarderTransformer);
+
         // Check if the operation was successful
         if (error != ForwarderError.None)
         {
