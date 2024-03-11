@@ -132,7 +132,13 @@ public static class UrlHelperExtensions
         }
         else
         {
-            baseUrl = urlHelper.ActionContext.HttpContext.Request.Scheme + "://" + urlHelper.ActionContext.HttpContext.Request.Host.Value;
+            string scheme = urlHelper.ActionContext.HttpContext.Request.Scheme;
+            if (urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("X-Forwarded-Proto"))
+            {
+                scheme = urlHelper.ActionContext.HttpContext.Request.Headers["X-Forwarded-Proto"];
+            }
+
+            baseUrl = scheme + "://" + urlHelper.ActionContext.HttpContext.Request.Host.Value;
         }
 
         return CombineUri(baseUrl, relativeUrl);

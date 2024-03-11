@@ -86,9 +86,6 @@ internal class TokenService
     /// <summary>
     /// Gets the access token of the current session asynchronous.
     /// </summary>
-    /// <remarks>
-    /// If no session is available the logic falls back to the client credentials flow.
-    /// </remarks>
     /// <returns>The access token.</returns>
     internal async Task<string> GetAccessTokenAsync()
     {
