@@ -1,7 +1,6 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
+﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using System.ComponentModel.DataAnnotations;
 using Yarp.ReverseProxy.Configuration;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
@@ -17,6 +16,17 @@ internal static class GatewayRouting
     /// <param name="services">The services.</param>
     internal static void AddGatewayRouting(IServiceCollection services, GatewayRoutingSettings settings)
     {
+        // Set up a factory for auth strategy factory
+        services.AddSingleton(serviceProvider =>
+        {
+            var factory = new AuthStrategyFactory(serviceProvider.GetRequiredService<GatewayRoutingSettings>());
+            factory.AddAuthStrategy(NoAuthenticationAuthStrategy.NAME, typeof(NoAuthenticationAuthStrategy));
+            factory.AddAuthStrategy(TokenPassThroughAuthStrategy.NAME, typeof(TokenPassThroughAuthStrategy));
+            factory.AddAuthStrategy(AzureOnBehalfOfAuthStrategy.NAME, typeof(AzureOnBehalfOfAuthStrategy));
+            return factory;
+        });
+
+        // Register all other needed services
         services.AddHttpForwarder();
         services.AddSingleton(settings); 
         services.AddTransient<GatewayRouter>();
@@ -56,9 +66,8 @@ internal static class GatewayRouting
             {
                 RouteId = routeSettings.Key,
                 ClusterId = routeSettings.Key,
-                AuthorizationPolicy = routeSettings.Value.EnforceAuthentication ? GatewayAuthentication.AuthenticationPolicyName : null,
                 Match = new RouteMatch { Path = routeSettings.Value.PathMatch },
-                Metadata = new Dictionary<string, string> { { "EnforceAuthentication", routeSettings.Value.EnforceAuthentication ? "True" : "False" } }
+                Metadata = new Dictionary<string, string> { { "RouteName", routeSettings.Key } }
             });
 
             clusters.Add(new ClusterConfig

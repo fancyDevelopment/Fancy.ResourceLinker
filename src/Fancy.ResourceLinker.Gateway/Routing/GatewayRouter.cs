@@ -1,11 +1,9 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
+﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
 using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Yarp.ReverseProxy.Forwarder;
@@ -20,7 +18,7 @@ public class GatewayRouter
     /// <summary>
     /// The HTTP client.
     /// </summary>
-    private readonly HttpClient _httpClient = new HttpClient();
+    private static readonly HttpClient _httpClient = new HttpClient();
 
     /// <summary>
     /// The forwarder message invoker.
@@ -58,14 +56,14 @@ public class GatewayRouter
     private readonly IResourceCache _resourceCache;
 
     /// <summary>
-    /// The token service.
+    /// The authentication strategy factory.
     /// </summary>
-    private readonly TokenService? _tokenService;
+    private readonly AuthStrategyFactory _authStrategyFactory;
 
     /// <summary>
-    /// The token client.
+    /// The service provider.
     /// </summary>
-    private readonly TokenClient? _tokenClient;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GatewayRouter"/> class.
@@ -74,24 +72,13 @@ public class GatewayRouter
     /// <param name="forwarder">The forwarder.</param>
     /// <param name="resourceCache">The resource cache.</param>
     /// <param name="serviceProvider">The service provider.</param>
-    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IResourceCache resourceCache, IServiceProvider serviceProvider)
+    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IResourceCache resourceCache, AuthStrategyFactory authStrategyFactory, IServiceProvider serviceProvider)
     {
         _settings = settings;
         _forwarder = forwarder;
         _resourceCache = resourceCache;
-
-        try
-        {
-            // Get the optional token service
-            _tokenService = serviceProvider.GetService<TokenService>();
-            _tokenClient = serviceProvider.GetService<TokenClient>();
-        }
-        catch(InvalidOperationException)
-        {
-            // The services are not available we assume there is no client scope and work with client credentials
-            _tokenService = null;
-            _tokenClient = null;
-        }
+        _authStrategyFactory = authStrategyFactory;
+        _serviceProvider = serviceProvider;
 
         // Set up serializer options
         _serializerOptions = new JsonSerializerOptions();
@@ -114,47 +101,23 @@ public class GatewayRouter
         _forwarderTransformer = new GatewayForwarderHttpTransformer();
     }
 
-    private async Task SetTokenToRequest(HttpRequestMessage request)
-    {
-        string accessToken;
-        if (_tokenService != null)
-        {
-            // A user session exists, get token from token service
-            accessToken = await _tokenService.GetAccessTokenAsync();
-        }
-        else if (_tokenClient != null)
-        {
-            // Fall back to client credentials token directly
-            ClientCredentialsTokenResponse? tokenResponse = await _tokenClient.GetTokenViaClientCredentialsAsync();
-            if (tokenResponse == null) throw new InvalidOperationException("Could not retrieve token via client credentials.");
-            accessToken = tokenResponse.AccessToken;
-        }
-        else
-        {
-            throw new InvalidOperationException($"If you want to send access tokens, gateway authentication must be configured.");
-        }
-
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-    }
-
     /// <summary>
     /// Sends a request and deserializes the response into a given type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="request">The request to send.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private async Task<TResource?> SendAsync<TResource>(HttpRequestMessage request, bool sendAccessToken) where TResource : class
+    private async Task<TResource?> SendAsync<TResource>(HttpRequestMessage request, string routeName) where TResource : class
     {
         if (_settings.ResourceProxy != null)
         {
             request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
         }
 
-        if(sendAccessToken)
-        {
-            await SetTokenToRequest(request);
-        }
+        // Set authentication to request
+        IAuthStrategy authStrategy = _authStrategyFactory.GetAuthStrategy(routeName);
+        await authStrategy.SetAuthenticationAsync(_serviceProvider, request);
 
         // Get data from microservice
         HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
@@ -175,18 +138,17 @@ public class GatewayRouter
     /// Sends a request.
     /// </summary>
     /// <param name="request">The request to send.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
-    private async Task SendAsync(HttpRequestMessage request, bool sendAccessToken)
+    /// <param name="routeName">The name of the route to use.</param>
+    private async Task SendAsync(HttpRequestMessage request, string routeName)
     {
         if (_settings.ResourceProxy != null)
         {
             request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
         }
 
-        if (sendAccessToken)
-        {
-            await SetTokenToRequest(request);
-        }
+        // Set authentication to request
+        IAuthStrategy authStrategy = _authStrategyFactory.GetAuthStrategy(routeName);
+        await authStrategy.SetAuthenticationAsync(_serviceProvider, request);
 
         // Get data from microservice
         HttpResponseMessage responseMessage = await _httpClient.SendAsync(request);
@@ -198,9 +160,9 @@ public class GatewayRouter
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri of the data to get.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private async Task<TResource> GetAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
+    private async Task<TResource> GetAsync<TResource>(Uri requestUri, string routeName) where TResource : class
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -209,7 +171,7 @@ public class GatewayRouter
             Method = HttpMethod.Get,
         };
 
-        var result = await SendAsync<TResource>(request, sendAccessToken);
+        var result = await SendAsync<TResource>(request, routeName);
 
         if(result == null) throw new ApplicationException("No Content was provided by the server");
 
@@ -220,13 +182,13 @@ public class GatewayRouter
     /// Get data from a microservice specified by its key of a provided route and deserializes it into a given type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource> GetAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
+    public Task<TResource> GetAsync<TResource>(string routeName, string relativeUrl) where TResource : class
     {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return GetAsync<TResource>(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return GetAsync<TResource>(requestUri, routeName);
     }
 
     /// <summary>
@@ -234,8 +196,8 @@ public class GatewayRouter
     /// </summary>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
-    private Task PutAsync(Uri requestUri, object content, bool sendAccessToken)
+    /// <param name="routeName">The name of the route to use.</param>
+    private Task PutAsync(Uri requestUri, object content, string routeName)
     { 
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -245,7 +207,7 @@ public class GatewayRouter
             Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync(request, sendAccessToken);
+        return SendAsync(request, routeName);
     }
 
     /// <summary>
@@ -257,7 +219,7 @@ public class GatewayRouter
     public Task PutAsync(string routeKey, string relativeUrl, object content)
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return PutAsync(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+        return PutAsync(requestUri, content, routeKey);
     }
 
     /// <summary>
@@ -266,9 +228,9 @@ public class GatewayRouter
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private Task<TResource?> PutAsync<TResource>(Uri requestUri, object content, bool sendAccessToken) where TResource: class
+    private Task<TResource?> PutAsync<TResource>(Uri requestUri, object content, string routeName) where TResource: class
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -278,21 +240,21 @@ public class GatewayRouter
             Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync<TResource>(request, sendAccessToken);
+        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
     /// Puts data to a specific uri.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource?> PutAsync<TResource>(string routeKey, string relativeUrl, object content) where TResource: class
+    public Task<TResource?> PutAsync<TResource>(string routeName, string relativeUrl, object content) where TResource: class
     {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return PutAsync<TResource>(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return PutAsync<TResource>(requestUri, content, routeName);
     }
 
     /// <summary>
@@ -300,8 +262,8 @@ public class GatewayRouter
     /// </summary>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
-    private Task PostAsync(Uri requestUri, object content, bool sendAccessToken)
+    /// <param name="routeName">The name of the route to use.</param>
+    private Task PostAsync(Uri requestUri, object content, string routeName)
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -311,30 +273,30 @@ public class GatewayRouter
             Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync(request, sendAccessToken);
-    }
-    
-    /// <summary>
-    /// Post data to a specific uri.
-    /// </summary>
-    /// <param name="routeKey">The key of the route to use.</param>
-    /// <param name="relativeUrl">The relative url to the endpoint.</param>
-    /// <param name="content">The content to send - will be serialized as json.</param>
-    public Task PostAsync(string routeKey, string relativeUrl, object content)
-    {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return PostAsync(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+        return SendAsync(request, routeName);
     }
 
     /// <summary>
-    /// Post data to a specific uri and return the result deserialized into the specified resource type.</returns>.
+    /// Post data to a specific uri.
+    /// </summary>
+    /// <param name="routeName">The name of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <param name="content">The content to send - will be serialized as json.</param>
+    public Task PostAsync(string routeName, string relativeUrl, object content)
+    {
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return PostAsync(requestUri, content, routeName);
+    }
+
+    /// <summary>
+    /// Post data to a specific uri and return the result deserialized into the specified resource type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri to send to.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private Task<TResource?> PostAsync<TResource>(Uri requestUri, object content, bool sendAccessToken) where TResource : class
+    private Task<TResource?> PostAsync<TResource>(Uri requestUri, object content, string routeName) where TResource : class
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -344,29 +306,29 @@ public class GatewayRouter
             Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync<TResource>(request, sendAccessToken);
+        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
-    /// Post data to a specific uri and return the result deserialized into the specified resource type.</returns>.
+    /// Post data to a specific uri and return the result deserialized into the specified resource type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <param name="content">The content to send - will be serialized as json.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource?> PostAsync<TResource>(string routeKey, string relativeUrl, object content) where TResource : class
+    public Task<TResource?> PostAsync<TResource>(string routeName, string relativeUrl, object content) where TResource : class
     {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return PostAsync<TResource>(requestUri, content, _settings.Routes[routeKey].EnforceAuthentication);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return PostAsync<TResource>(requestUri, content, routeName);
     }
 
     /// <summary>
     /// Delete data from a specific URI
     /// </summary>
     /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
-    private Task DeleteAsync(Uri requestUri, bool sendAccessToken)
+    /// <param name="routeName">The name of the route to use.</param>
+    private Task DeleteAsync(Uri requestUri, string routeName)
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -375,18 +337,18 @@ public class GatewayRouter
             Method = HttpMethod.Delete,
         };
 
-        return SendAsync(request, sendAccessToken);
+        return SendAsync(request, routeName);
     }
 
     /// <summary>
     /// Delete data from a specific URI
     /// </summary>
-    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
-    public Task DeleteAsync(string routeKey, string relativeUrl)
+    public Task DeleteAsync(string routeName, string relativeUrl)
     {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return DeleteAsync(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return DeleteAsync(requestUri, routeName);
     }
 
     /// <summary>
@@ -394,9 +356,9 @@ public class GatewayRouter
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="sendAccessToken">If true, the request will be enriched with an access token.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private Task<TResource?> DeleteAsync<TResource>(Uri requestUri, bool sendAccessToken) where TResource : class
+    private Task<TResource?> DeleteAsync<TResource>(Uri requestUri, string routeName) where TResource : class
     {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
@@ -405,20 +367,20 @@ public class GatewayRouter
             Method = HttpMethod.Delete,
         };
 
-        return SendAsync<TResource>(request, sendAccessToken);
+        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
     /// Delete data from a specific URI and return the result deserialized into the specified resource type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="routeKey">The key of the route to use.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource?> DeleteAsync<TResource>(string routeKey, string relativeUrl) where TResource : class
+    public Task<TResource?> DeleteAsync<TResource>(string routeName, string relativeUrl) where TResource : class
     {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return DeleteAsync<TResource>(requestUri, _settings.Routes[routeKey].EnforceAuthentication);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return DeleteAsync<TResource>(requestUri, routeName);
     }
 
     /// <summary>
@@ -428,10 +390,11 @@ public class GatewayRouter
     /// <typeparam name="TResource">The type of the resource.</typeparam>
     /// <param name="requestUri">The uri of the data to get.</param>
     /// <param name="maxResourceAge">The maximum age of the resource which is acceptable.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public async Task<TResource> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, bool sendAccessToken) where TResource : class
+    public async Task<TResource> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, string routeName) where TResource : class
     {
         string cacheKey = requestUri.ToString();
 
@@ -444,7 +407,7 @@ public class GatewayRouter
         else
         {
             // Get resource from origin and write it to the cache
-            data = await GetAsync<TResource>(requestUri, sendAccessToken);
+            data = await GetAsync<TResource>(requestUri, routeName);
             _resourceCache.Write(cacheKey, data);
             return data;
         }
@@ -456,25 +419,25 @@ public class GatewayRouter
     /// data is retrieved from the origin and written to the cache.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="routeKey">The key of the route url to use.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <param name="maxResourceAge">The maximum age of the resource which is acceptable.</param>
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public Task<TResource> GetCachedAsync<TResource>(string routeKey, string relativeUrl, TimeSpan maxResourceAge) where TResource : class
+    public Task<TResource> GetCachedAsync<TResource>(string routeName, string relativeUrl, TimeSpan maxResourceAge) where TResource : class
     {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return GetCachedAsync<TResource>(requestUri, maxResourceAge, _settings.Routes[routeKey].EnforceAuthentication);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+        return GetCachedAsync<TResource>(requestUri, maxResourceAge, routeName);
     }
 
     /// <summary>
     /// Sends the current request to a microservice.
     /// </summary>
-    /// <param name="routeKey">The key to the uri of the microservcie to send the request to.</param>
+    /// <param name="routeName">The name of the route to use.</param>
     /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <returns>The response of the call to the microservice as IActionResult</returns>
-    public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeKey, string relativeUrl)
+    public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeName, string relativeUrl)
     {
         HttpRequestMessage proxyRequest = new HttpRequestMessage();
 
@@ -489,7 +452,7 @@ public class GatewayRouter
 
         proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
 
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
 
         if (_settings.ResourceProxy != null)
         {
@@ -500,10 +463,9 @@ public class GatewayRouter
         proxyRequest.Headers.Host = requestUri.Authority;
         proxyRequest.RequestUri = requestUri;
 
-        if (_settings.Routes[routeKey].EnforceAuthentication)
-        {
-            await SetTokenToRequest(proxyRequest);
-        }
+        // Set authentication to request
+        IAuthStrategy authStrategy = _authStrategyFactory.GetAuthStrategy(routeName);
+        await authStrategy.SetAuthenticationAsync(httpContext.RequestServices, proxyRequest);
 
         HttpResponseMessage proxyResponse = await _httpClient.SendAsync(proxyRequest);
 
@@ -552,19 +514,19 @@ public class GatewayRouter
     /// Forwards an http context asynchronous.
     /// </summary>
     /// <param name="httpContext">The HTTP context.</param>
-    /// <param name="routeKey">The route key.</param>
+    /// <param name="routeName">The route name to use.</param>
     /// <param name="relativurl">The relativurl.</param>
-    public async Task ForwardAsync(HttpContext httpContext, string routeKey, string relativurl)
+    public async Task ForwardAsync(HttpContext httpContext, string routeName, string relativurl)
     {
-        string baseUrl = GetBaseUrl(routeKey);
+        string baseUrl = GetBaseUrl(routeName);
         Uri targetUrl = CombineUris(baseUrl, relativurl);
 
-        httpContext.Items[GatewayForwarderHttpTransformer.SendAccessTokenItemKey] = _settings.Routes[routeKey].EnforceAuthentication;
+        httpContext.Items[GatewayForwarderHttpTransformer.RouteNameItemKey] = routeName;
         httpContext.Items[GatewayForwarderHttpTransformer.TargetUrlItemKey] = targetUrl.AbsoluteUri;
 
         // Forward request to microservice
-        ForwarderError error = await _forwarder.SendAsync(httpContext, 
-                                                          routeKey, 
+        ForwarderError error = await _forwarder.SendAsync(httpContext,
+                                                          routeName, 
                                                           _forwarderMessageInvoker, 
                                                           _forwarderRequestConfig, 
                                                           _forwarderTransformer);

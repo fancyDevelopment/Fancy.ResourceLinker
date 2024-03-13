@@ -1,5 +1,7 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
+using Fancy.ResourceLinker.Gateway.Routing.Auth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -14,7 +16,7 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
     /// <summary>
     /// The send access token item key.
     /// </summary>
-    internal static readonly string SendAccessTokenItemKey = "SendAccessTokenItemKey";
+    internal static readonly string RouteNameItemKey = "RouteNameItemKey";
 
     /// <summary>
     /// The target URL item key.
@@ -25,14 +27,14 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
     {
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
 
-        if (Convert.ToBoolean(httpContext.Items[SendAccessTokenItemKey]))
+        string? routeName = httpContext.Items[RouteNameItemKey]?.ToString();
+
+        if(!string.IsNullOrEmpty(routeName))
         {
-            // Add access token
-            TokenService? tokenService = httpContext.RequestServices.GetService(typeof(TokenService)) as TokenService;
-
-            if (tokenService == null) throw new InvalidOperationException($"If 'EnforceAuthentication' is 'true', gateway authentication must be configured.");
-
-            proxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await tokenService.GetAccessTokenAsync());
+            // Add authentication
+            AuthStrategyFactory authStrategyFactory = httpContext.RequestServices.GetRequiredService<AuthStrategyFactory>();
+            IAuthStrategy authStrategy = authStrategyFactory.GetAuthStrategy(routeName);
+            await authStrategy.SetAuthenticationAsync(httpContext.RequestServices, proxyRequest);
         }
 
         if(httpContext.Items.ContainsKey(TargetUrlItemKey))
