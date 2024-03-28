@@ -24,8 +24,8 @@ internal static class GatewayPipeline
                 && proxyFeature.Route.Config.Metadata.ContainsKey("RouteName"))
             {
                 string routeName = proxyFeature.Route.Config.Metadata["RouteName"];
-                AuthStrategyFactory authStrategyFactory = context.RequestServices.GetRequiredService<AuthStrategyFactory>();
-                IAuthStrategy authStrategy = authStrategyFactory.GetAuthStrategy(routeName);
+                RouteAuthenticationManager authStrategyFactory = context.RequestServices.GetRequiredService<RouteAuthenticationManager>();
+                IRouteAuthenticationStrategy authStrategy = await authStrategyFactory.GetAuthStrategyAsync(routeName);
                 await authStrategy.SetAuthenticationAsync(context);
             }
             await next().ConfigureAwait(false);

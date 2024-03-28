@@ -56,9 +56,9 @@ public class GatewayRouter
     private readonly IResourceCache _resourceCache;
 
     /// <summary>
-    /// The authentication strategy factory.
+    /// The route authentication manager.
     /// </summary>
-    private readonly AuthStrategyFactory _authStrategyFactory;
+    private readonly RouteAuthenticationManager _routeAuthManager;
 
     /// <summary>
     /// The service provider.
@@ -66,18 +66,19 @@ public class GatewayRouter
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="GatewayRouter"/> class.
+    /// Initializes a new instance of the <see cref="GatewayRouter" /> class.
     /// </summary>
     /// <param name="settings">The settings.</param>
     /// <param name="forwarder">The forwarder.</param>
     /// <param name="resourceCache">The resource cache.</param>
+    /// <param name="routeAuthManager">The route authentication manager.</param>
     /// <param name="serviceProvider">The service provider.</param>
-    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IResourceCache resourceCache, AuthStrategyFactory authStrategyFactory, IServiceProvider serviceProvider)
+    public GatewayRouter(GatewayRoutingSettings settings, IHttpForwarder forwarder, IResourceCache resourceCache, RouteAuthenticationManager routeAuthManager, IServiceProvider serviceProvider)
     {
         _settings = settings;
         _forwarder = forwarder;
         _resourceCache = resourceCache;
-        _authStrategyFactory = authStrategyFactory;
+        _routeAuthManager = routeAuthManager;
         _serviceProvider = serviceProvider;
 
         // Set up serializer options
@@ -116,7 +117,7 @@ public class GatewayRouter
         }
 
         // Set authentication to request
-        IAuthStrategy authStrategy = _authStrategyFactory.GetAuthStrategy(routeName);
+        IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
         await authStrategy.SetAuthenticationAsync(_serviceProvider, request);
 
         // Get data from microservice
@@ -147,7 +148,7 @@ public class GatewayRouter
         }
 
         // Set authentication to request
-        IAuthStrategy authStrategy = _authStrategyFactory.GetAuthStrategy(routeName);
+        IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
         await authStrategy.SetAuthenticationAsync(_serviceProvider, request);
 
         // Get data from microservice
@@ -446,7 +447,7 @@ public class GatewayRouter
             using (StreamReader reader = new StreamReader(httpContext.Request.Body))
             {
                 string content = await reader.ReadToEndAsync();
-                proxyRequest.Content = new StringContent(content, Encoding.UTF8, httpContext.Request.ContentType);
+                proxyRequest.Content = new StringContent(content, Encoding.UTF8, httpContext.Request.ContentType ?? string.Empty);
             }
         }
 
@@ -464,7 +465,7 @@ public class GatewayRouter
         proxyRequest.RequestUri = requestUri;
 
         // Set authentication to request
-        IAuthStrategy authStrategy = _authStrategyFactory.GetAuthStrategy(routeName);
+        IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
         await authStrategy.SetAuthenticationAsync(httpContext.RequestServices, proxyRequest);
 
         HttpResponseMessage proxyResponse = await _httpClient.SendAsync(proxyRequest);

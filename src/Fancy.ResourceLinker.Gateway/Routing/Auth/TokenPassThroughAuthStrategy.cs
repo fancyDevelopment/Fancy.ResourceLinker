@@ -1,15 +1,15 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Primitives;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 namespace Fancy.ResourceLinker.Gateway.Routing.Auth;
 
 /// <summary>
 /// An auth strategy which just passes through the current token
 /// </summary>
-internal class TokenPassThroughAuthStrategy : IAuthStrategy
+internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
 {
     /// <summary>
     /// The name of the auth strategy.
@@ -38,6 +38,17 @@ internal class TokenPassThroughAuthStrategy : IAuthStrategy
     /// </value>
     public string Name => NAME;
 
+    /// <summary>Initializes the authentication strategy based on the gateway authentication settings and the route authentication settings asynchronous.</summary>
+    /// <param name="gatewayAuthenticationSettings">The gateway authentication settigns.</param>
+    /// <param name="routeAuthenticationSettings">The route authentication settigns.</param>
+    /// <returns>
+    ///   A task indicating the completion of the asyncrhonous operation.
+    /// </returns>
+    public Task InitializeAsync(GatewayAuthenticationSettings? gatewayAuthenticationSettings, RouteAuthenticationSettings routeAuthenticationSettings)
+    {
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// Sets the authentication to an http context asynchronous.
     /// </summary>
@@ -51,8 +62,8 @@ internal class TokenPassThroughAuthStrategy : IAuthStrategy
 
         if (tokenService != null)
         {
-            string? accessToken = await tokenService.GetAccessTokenAsync();
-            context.Request.Headers.Add("Authorization", "Bearer " + accessToken);
+            string accessToken = await tokenService.GetAccessTokenAsync();
+            context.Request.Headers.Authorization = new StringValues("Bearer " + accessToken);
         }
     }
 
@@ -70,7 +81,7 @@ internal class TokenPassThroughAuthStrategy : IAuthStrategy
 
         if (tokenService != null)
         {
-            string? accessToken = await tokenService.GetAccessTokenAsync();
+            string accessToken = await tokenService.GetAccessTokenAsync();
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
     }

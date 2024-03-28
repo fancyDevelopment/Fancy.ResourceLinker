@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Fancy.ResourceLinker.Gateway.Authentication;
+using Microsoft.AspNetCore.Http;
 
 namespace Fancy.ResourceLinker.Gateway.Routing.Auth;
 
 /// <summary>
 /// An authentication strategy which does not set any authentication.
 /// </summary>
-public class NoAuthenticationAuthStrategy : IAuthStrategy
+public class NoAuthenticationAuthStrategy : IRouteAuthenticationStrategy
 {
     /// <summary>
     /// The name of the auth strategy
@@ -28,6 +29,12 @@ public class NoAuthenticationAuthStrategy : IAuthStrategy
     /// The name.
     /// </value>
     public string Name => NAME;
+
+    public Task InitializeAsync(GatewayAuthenticationSettings? gatewayAuthenticationSettings, RouteAuthenticationSettings routeAuthenticationSettings)
+    {
+        return Task.CompletedTask;
+    }
+
 
     /// <summary>
     /// Sets the authentication to an http context asynchronous.

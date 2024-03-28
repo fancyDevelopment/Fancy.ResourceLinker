@@ -112,7 +112,13 @@ public static class ServiceCollectionExtensions
     /// <returns>A configured gateway builder.</returns>
     public static ConfiguredGatewayBuilder LoadConfiguration(this GatewayBuilder gatewayBuilder, IConfiguration config)
     {
-        GatewaySettings settings = config.Get<GatewaySettings>();
+        GatewaySettings? settings = config.Get<GatewaySettings>();
+
+        if(settings == null)
+        {
+            throw new InvalidOperationException("The provided configuration does not contain proper settings");
+        }
+
         if (settings.Authentication != null) gatewayBuilder.Services.AddSingleton(settings.Authentication);
         if (settings.Routing != null) gatewayBuilder.Services.AddSingleton(settings.Routing);
         ConfiguredGatewayBuilder configuredGatewayBuilder = new ConfiguredGatewayBuilder(gatewayBuilder.Services, settings);

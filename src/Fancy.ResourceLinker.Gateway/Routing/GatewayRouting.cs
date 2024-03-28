@@ -16,21 +16,18 @@ internal static class GatewayRouting
     /// <param name="services">The services.</param>
     internal static void AddGatewayRouting(IServiceCollection services, GatewayRoutingSettings settings)
     {
-        // Set up a factory for auth strategy factory
-        services.AddSingleton(serviceProvider =>
-        {
-            var factory = new AuthStrategyFactory(serviceProvider.GetRequiredService<GatewayRoutingSettings>());
-            factory.AddAuthStrategy(NoAuthenticationAuthStrategy.NAME, typeof(NoAuthenticationAuthStrategy));
-            factory.AddAuthStrategy(TokenPassThroughAuthStrategy.NAME, typeof(TokenPassThroughAuthStrategy));
-            factory.AddAuthStrategy(AzureOnBehalfOfAuthStrategy.NAME, typeof(AzureOnBehalfOfAuthStrategy));
-            return factory;
-        });
-
         // Register all other needed services
         services.AddHttpForwarder();
         services.AddSingleton(settings); 
         services.AddTransient<GatewayRouter>();
         services.AddReverseProxy().AddGatewayRoutes(settings);
+
+        // Set up routing authentication subsystem
+        services.AddSingleton<RouteAuthenticationManager>();
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, NoAuthenticationAuthStrategy>(NoAuthenticationAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, TokenPassThroughAuthStrategy>(TokenPassThroughAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, AzureOnBehalfOfAuthStrategy>(AzureOnBehalfOfAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, ClientCredentialOnlyAuthStrategy>(ClientCredentialOnlyAuthStrategy.NAME);
     }
 
     /// <summary>

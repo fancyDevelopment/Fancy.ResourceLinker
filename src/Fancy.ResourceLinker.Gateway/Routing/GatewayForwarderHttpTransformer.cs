@@ -32,8 +32,8 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
         if(!string.IsNullOrEmpty(routeName))
         {
             // Add authentication
-            AuthStrategyFactory authStrategyFactory = httpContext.RequestServices.GetRequiredService<AuthStrategyFactory>();
-            IAuthStrategy authStrategy = authStrategyFactory.GetAuthStrategy(routeName);
+            RouteAuthenticationManager routeAuthenticationManager = httpContext.RequestServices.GetRequiredService<RouteAuthenticationManager>();
+            IRouteAuthenticationStrategy authStrategy = await routeAuthenticationManager.GetAuthStrategyAsync(routeName);
             await authStrategy.SetAuthenticationAsync(httpContext.RequestServices, proxyRequest);
         }
 

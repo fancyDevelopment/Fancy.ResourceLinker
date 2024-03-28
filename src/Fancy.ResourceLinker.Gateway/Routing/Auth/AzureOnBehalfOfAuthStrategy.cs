@@ -2,23 +2,56 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace Fancy.ResourceLinker.Gateway.Routing.Auth;
 
-
-class TokenExchangeResponse
+class OnBehalfOfTokenResponse
 {
-    public string access_token { get; set; } = "";
-    public string refresh_token { get; set; } = "";
-    public long expires_in { get; set; }
+    /// <summary>
+    /// Gets or sets the access token.
+    /// </summary>
+    /// <value>
+    /// The access token.
+    /// </value>
+    [JsonPropertyName("access_token")]
+    public string AccessToken { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the refresh token.
+    /// </summary>
+    /// <value>
+    /// The refresh token.
+    /// </value>
+    [JsonPropertyName("refresh_token")]
+    public string RefreshToken { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the expires in.
+    /// </summary>
+    /// <value>
+    /// The expires in.
+    /// </value>
+    [JsonPropertyName("expires_in")]
+    public long ExpiresIn { get; set; }
+
+    /// <summary>
+    /// Gets or sets the expires at.
+    /// </summary>
+    /// <value>
+    /// The expires at.
+    /// </value>
+    [JsonIgnore]
+    public DateTime ExpiresAt { get; set; }
 }
 
 /// <summary>
 /// An auth strategy which just passes through the current token
 /// </summary>
-internal class AzureOnBehalfOfAuthStrategy : IAuthStrategy
+internal class AzureOnBehalfOfAuthStrategy : IRouteAuthenticationStrategy
 {
     /// <summary>
     /// The name of the auth strategy.
@@ -31,17 +64,44 @@ internal class AzureOnBehalfOfAuthStrategy : IAuthStrategy
     private readonly HttpClient _httpClient = new HttpClient();
 
     /// <summary>
-    /// The route authentication settings.
+    /// The discovery document service.
     /// </summary>
-    private readonly RouteAuthenticationSettings _routeAuthenticationSettings;
+    private readonly DiscoveryDocumentService _discoveryDocumentService;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="TokenPassThroughAuthStrategy"/> class.
+    /// The logger.
     /// </summary>
-    /// <param name="tokenService">The token service.</param>
-    public AzureOnBehalfOfAuthStrategy(RouteAuthenticationSettings routeAuthenticationSettings)
+    private readonly ILogger<AzureOnBehalfOfAuthStrategy> _logger;
+
+    /// <summary>
+    /// The gateway authentication settings.
+    /// </summary>
+    private GatewayAuthenticationSettings? _gatewayAuthenticationSettings;
+
+    /// <summary>
+    /// The route authentication settings.
+    /// </summary>
+    private RouteAuthenticationSettings? _routeAuthenticationSettings;
+
+    /// <summary>
+    /// The discovery document.
+    /// </summary>
+    private DiscoveryDocument? _discoveryDocument;
+
+    /// <summary>
+    /// The current token response.
+    /// </summary>
+    private OnBehalfOfTokenResponse? _currentTokenResponse;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureOnBehalfOfAuthStrategy"/> class.
+    /// </summary>
+    /// <param name="discoveryDocumentService">The discovery document service.</param>
+    /// <param name="logger">The logger.</param>
+    public AzureOnBehalfOfAuthStrategy(DiscoveryDocumentService discoveryDocumentService, ILogger<AzureOnBehalfOfAuthStrategy> logger)
     {
-        _routeAuthenticationSettings = routeAuthenticationSettings;
+        _discoveryDocumentService = discoveryDocumentService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -53,6 +113,29 @@ internal class AzureOnBehalfOfAuthStrategy : IAuthStrategy
     public string Name => NAME;
 
     /// <summary>
+    /// Initializes the authentication strategy based on the gateway authentication settings and the route authentication settings asynchronous.
+    /// </summary>
+    /// <param name="gatewayAuthenticationSettings">The gateway authentication settigns.</param>
+    /// <param name="routeAuthenticationSettings">The route authentication settigns.</param>
+    public async Task InitializeAsync(GatewayAuthenticationSettings? gatewayAuthenticationSettings, RouteAuthenticationSettings routeAuthenticationSettings)
+    {
+        _gatewayAuthenticationSettings = gatewayAuthenticationSettings;
+
+        if(_gatewayAuthenticationSettings == null)
+        {
+            throw new InvalidOperationException($"The {NAME} route authentication strategy needs to have the gateway authenticaion configured");
+        }
+
+        if(string.IsNullOrEmpty(_gatewayAuthenticationSettings.ClientId) || string.IsNullOrEmpty(_gatewayAuthenticationSettings.ClientSecret))
+        {
+            throw new InvalidOperationException($"The {NAME} route authentication strategy needs to have set the 'ClientId' and 'Client Secret' settings at the gateway authentication settings.");
+        }
+
+        _routeAuthenticationSettings = routeAuthenticationSettings;
+        _discoveryDocument = await _discoveryDocumentService.LoadDiscoveryDocumentAsync(_gatewayAuthenticationSettings.Authority);
+    }
+
+    /// <summary>
     /// Sets the authentication to an http context asynchronous.
     /// </summary>
     /// <param name="context">The http context.</param>
@@ -61,13 +144,8 @@ internal class AzureOnBehalfOfAuthStrategy : IAuthStrategy
     /// </returns>
     public async Task SetAuthenticationAsync(HttpContext context)
     {
-        TokenService? tokenService = TryGetTokenService(context.RequestServices);
-
-        if (tokenService != null)
-        {
-            string? accessToken = await tokenService.GetAccessTokenAsync();
-            context.Request.Headers.Add("Authorization", "Bearer " + accessToken);
-        }
+        string accessToken = await GetAccessTokenAsync(context.RequestServices);
+        context.Request.Headers.Authorization =  new StringValues("Bearer " + accessToken);
     }
 
     /// <summary>
@@ -80,54 +158,79 @@ internal class AzureOnBehalfOfAuthStrategy : IAuthStrategy
     /// </returns>
     public async Task SetAuthenticationAsync(IServiceProvider serviceProvider, HttpRequestMessage request)
     {
-        string? accessToken = await TryGetOnBehalfOfTokenAsync(serviceProvider);
-
-        if (accessToken != null)
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        }
+        string accessToken = await GetAccessTokenAsync(serviceProvider);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
     }
 
-    private async Task<string?> TryGetOnBehalfOfTokenAsync(IServiceProvider serviceProvider)
+    /// <summary>
+    /// Gets the access token asynchronous.
+    /// </summary>
+    /// <returns>The access token.</returns>
+    private async Task<string> GetAccessTokenAsync(IServiceProvider serviceProvider)
     {
-        DiscoveryDocumentService discoveryDocumentService = serviceProvider.GetRequiredService<DiscoveryDocumentService>();
-        GatewayAuthenticationSettings authSettings = serviceProvider.GetRequiredService<GatewayAuthenticationSettings>();
-        var disoveryDocument = await discoveryDocumentService.LoadDiscoveryDocumentAsync(authSettings.Authority);
-
-        TokenService? tokenService = TryGetTokenService(serviceProvider);
-        string? accessToken = await tokenService?.GetAccessTokenAsync();
-
-        if (accessToken != null)
+        if (_currentTokenResponse == null || IsExpired(_currentTokenResponse))
         {
-            var payload = new Dictionary<string, string>
-            {
-                { "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer" },
-                { "client_id", _routeAuthenticationSettings.Options["ClientId"] },
-                { "client_secret", _routeAuthenticationSettings.Options["ClientSecret"] },
-                { "assertion", accessToken },
-                { "scope", _routeAuthenticationSettings.Options["Scope"] },
-                { "requested_token_use", "on_behalf_of" },
-            };
+            TokenService? tokenService = TryGetTokenService(serviceProvider);
 
-            FormUrlEncodedContent content = new FormUrlEncodedContent(payload);
-            HttpResponseMessage httpResponse = await _httpClient.PostAsync(disoveryDocument.TokenEndpoint, content);
-            
-            try
+            if (tokenService == null)
             {
-                httpResponse.EnsureSuccessStatusCode();
-            }
-            catch(HttpRequestException)
-            {
-                ILogger<AzureOnBehalfOfAuthStrategy> logger = serviceProvider.GetRequiredService<ILogger<AzureOnBehalfOfAuthStrategy>>();
-                string errorResponse = new StreamReader(httpResponse.Content.ReadAsStream()).ReadToEnd();
-                logger.LogError("Error on on behalf of token exchange. Response from server " + errorResponse);
-                throw;
+                throw new InvalidOperationException("A token service in a scope is needed to use the azure on behalf of flow");
             }
 
-            TokenExchangeResponse? response = await httpResponse.Content.ReadFromJsonAsync<TokenExchangeResponse>();
-            return response?.access_token;
+            _currentTokenResponse = await GetOnBehalfOfTokenAsync(tokenService);
         }
-        return null;
+
+        return _currentTokenResponse.AccessToken;
+    }
+
+    /// <summary>
+    /// Gets a token via an on behalf of flow asynchronous.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider.</param>
+    /// <returns>The exchanged token.</returns>
+    private async Task<OnBehalfOfTokenResponse> GetOnBehalfOfTokenAsync(TokenService tokenService)
+    {
+        if(_gatewayAuthenticationSettings == null || _routeAuthenticationSettings == null)
+        {
+            throw new InvalidOperationException("Initialize the auth strategy first before using it");
+        }
+
+        string accessToken = await tokenService.GetAccessTokenAsync();
+
+        var payload = new Dictionary<string, string>
+        {
+            { "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer" },
+            { "client_id", _gatewayAuthenticationSettings.ClientId },
+            { "client_secret", _gatewayAuthenticationSettings.ClientSecret },
+            { "assertion", accessToken },
+            { "scope", _routeAuthenticationSettings.Options["Scope"] },
+            { "requested_token_use", "on_behalf_of" },
+        };
+
+        FormUrlEncodedContent content = new FormUrlEncodedContent(payload);
+        HttpResponseMessage httpResponse = await _httpClient.PostAsync(_discoveryDocument?.TokenEndpoint, content);
+            
+        try
+        {
+            httpResponse.EnsureSuccessStatusCode();
+        }
+        catch(HttpRequestException)
+        {
+            string errorResponse = new StreamReader(httpResponse.Content.ReadAsStream()).ReadToEnd();
+            _logger.LogError("Error on on behalf of token exchange. Response from server " + errorResponse);
+            throw;
+        }
+
+        OnBehalfOfTokenResponse? result = await httpResponse.Content.ReadFromJsonAsync<OnBehalfOfTokenResponse>();
+
+        if(result == null) 
+        {
+            throw new InvalidOperationException("Could not deserialize token response from azure on behalf of flow");
+        }
+
+        result.ExpiresAt = DateTime.UtcNow.AddSeconds(Convert.ToInt32(result.ExpiresIn));
+
+        return result;
     }
 
     /// <summary>
@@ -147,5 +250,15 @@ internal class AzureOnBehalfOfAuthStrategy : IAuthStrategy
             return null;
         }
     }
-}
 
+    /// Determines whether the specified token response is expired.
+    /// </summary>
+    /// <param name="response">The response.</param>
+    /// <returns>
+    ///   <c>true</c> if the specified response is expired; otherwise, <c>false</c>.
+    /// </returns>
+    private bool IsExpired(OnBehalfOfTokenResponse response)
+    {
+        return response.ExpiresAt.Subtract(DateTime.UtcNow).TotalSeconds < 30;
+    }
+}
