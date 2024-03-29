@@ -6,7 +6,7 @@ namespace Fancy.ResourceLinker.Gateway.Authentication;
 /// <summary>
 /// Class to hold the result of a token refresh response.
 /// </summary>
-internal class TokenRefreshResponse
+public class TokenRefreshResponse
 {
     /// <summary>
     /// Gets or sets the identifier token.
@@ -48,7 +48,7 @@ internal class TokenRefreshResponse
 /// <summary>
 /// Class to hold the result of a client credentials token response.
 /// </summary>
-internal class ClientCredentialsTokenResponse
+public class ClientCredentialsTokenResponse
 {
     /// <summary>
     /// Gets or sets the access token.
@@ -72,7 +72,7 @@ internal class ClientCredentialsTokenResponse
 /// <summary>
 /// A token client with implementation of typical token logic.
 /// </summary>
-internal class TokenClient
+public class TokenClient
 {
     /// <summary>
     /// The authentication settings.
