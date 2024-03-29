@@ -1,4 +1,5 @@
 ﻿using Fancy.ResourceLinker.Gateway;
+using Fancy.ResourceLinker.Gateway.Common;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -40,7 +41,6 @@ internal sealed class GatewayAuthentication
     internal static void AddGatewayAuthentication(IServiceCollection services, GatewayAuthenticationSettings settings)
     {
         _settings = settings;
-        services.AddSingleton<DiscoveryDocumentService>();
         services.AddSingleton<TokenClient>();
         services.AddScoped<TokenService>();
         services.AddHostedService<TokenCleanupBackgroundService>();

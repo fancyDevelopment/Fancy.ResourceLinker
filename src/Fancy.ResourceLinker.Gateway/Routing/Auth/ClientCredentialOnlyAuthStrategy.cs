@@ -1,4 +1,5 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
+using Fancy.ResourceLinker.Gateway.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -134,7 +135,7 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
 
         if (routeAuthenticationSettings.Options.ContainsKey("ClientId"))
         {
-            _clientId = routeAuthenticationSettings.Options["Client"];
+            _clientId = routeAuthenticationSettings.Options["ClientId"];
         }
         else if (!string.IsNullOrEmpty(gatewayAuthenticationSettings?.ClientId))
         {

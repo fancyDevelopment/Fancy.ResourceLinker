@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Gateway.AntiForgery;
 using Fancy.ResourceLinker.Gateway.Authentication;
+using Fancy.ResourceLinker.Gateway.Common;
 using Fancy.ResourceLinker.Gateway.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,6 +102,7 @@ public static class ServiceCollectionExtensions
     /// <returns>A gateway builder.</returns>
     public static GatewayBuilder AddGateway(this IServiceCollection services)
     {
+        GatewayCommon.AddGatewayCommonServices(services);
         return new GatewayBuilder(services);
     }
 

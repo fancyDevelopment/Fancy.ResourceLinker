@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.0.7</Version>
+    <Version>0.0.8</Version>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,7 +10,7 @@
   <!-- Package Metadata -->
   <PropertyGroup>
     <Title>Fancy Resource Linker Gateway</Title>
-    <Description>A library to create API Gateways with dynamic data structures on top of ASP.NET Core..</Description>
+    <Description>A library to create API Gateways with dynamic data structures on top of ASP.NET Core.</Description>
     <Authors>fancy Development - Daniel Murrmann</Authors>
     <Copyright>Copyright 2015-2023 fancyDevelopment - Daniel Murrmann</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.20" />
-    <PackageReference Include="Yarp.ReverseProxy" Version="2.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.3" />
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
   </ItemGroup>
   
   <ItemGroup>

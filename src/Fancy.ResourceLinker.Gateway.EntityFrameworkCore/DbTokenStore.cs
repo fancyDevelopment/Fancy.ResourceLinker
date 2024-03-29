@@ -40,7 +40,7 @@ internal class DbTokenStore : ITokenStore
     }
 
     /// <summary>
-    /// Saves the or update tokens asynchronous.
+    /// Saves or update tokens asynchronous.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="idToken">The identifier token.</param>

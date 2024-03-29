@@ -1,4 +1,5 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
+using Fancy.ResourceLinker.Gateway.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,9 @@ using System.Text.Json.Serialization;
 
 namespace Fancy.ResourceLinker.Gateway.Routing.Auth;
 
+/// <summary>
+/// A model to deserialize the on behalf of token response.
+/// </summary>
 class OnBehalfOfTokenResponse
 {
     /// <summary>

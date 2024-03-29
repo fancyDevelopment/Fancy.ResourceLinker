@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Fancy.ResourceLinker.Gateway.Common;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 

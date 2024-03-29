@@ -19,7 +19,9 @@ internal class InMemoryTokenStore : ITokenStore
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiration">The expiration.</param>
-    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    /// <returns>
+    /// A task indicating the completion of the asynchronous operation.
+    /// </returns>
     public Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiration)
     {
         _tokens[sessionId] = new TokenRecord(sessionId, idToken, accessToken, refreshToken, expiration );
