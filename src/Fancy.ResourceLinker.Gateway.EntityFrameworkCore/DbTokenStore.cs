@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
 namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 
@@ -13,6 +14,11 @@ internal class DbTokenStore : ITokenStore
     /// The database context
     /// </summary>
     private readonly GatewayDbContext _dbContext;
+
+    /// <summary>
+    /// The cached tokens.
+    /// </summary>
+    ConcurrentDictionary<string, TokenSet?> _cachedTokens = new ConcurrentDictionary<string, TokenSet?>();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DbTokenStore"/> class.
@@ -30,13 +36,29 @@ internal class DbTokenStore : ITokenStore
     /// <returns>
     /// A token record if available.
     /// </returns>
-    public async Task<TokenRecord?> GetTokenRecordAsync(string sessionId)
+    /// <remarks>
+    /// This method is thread save to enable paralell calls from the gateway to backends.
+    /// </remarks>
+    public Task<TokenRecord?> GetTokenRecordAsync(string sessionId)
     {
-        TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
+        TokenSet? tokenSet;
 
-        if (tokenSet == null) { return null; }
+        lock (_dbContext)
+        {
+            if (!_cachedTokens.ContainsKey(sessionId))
+            {
+                tokenSet = _dbContext.TokenSets.SingleOrDefault(ts => ts.SessionId == sessionId);
+                _cachedTokens[sessionId] = tokenSet;
+            }
+            else
+            {
+                tokenSet = _cachedTokens[sessionId];
+            }
+        }
 
-        return new TokenRecord(sessionId, tokenSet.IdToken, tokenSet.AccessToken, tokenSet.RefreshToken, tokenSet.ExpiresAt);
+        if (tokenSet == null) { return Task.FromResult<TokenRecord?>(null); }
+
+        return Task.FromResult<TokenRecord?>(new TokenRecord(sessionId, tokenSet.IdToken, tokenSet.AccessToken, tokenSet.RefreshToken, tokenSet.ExpiresAt));
     }
 
     /// <summary>
@@ -64,6 +86,7 @@ internal class DbTokenStore : ITokenStore
             tokenSet.ExpiresAt = expiresAt;
         }
 
+        _cachedTokens[sessionId] = tokenSet;
         await _dbContext.SaveChangesAsync();
     }
 

@@ -49,6 +49,7 @@ namespace Fancy.ResourceLinker.Gateway.Authentication
                 while (await timer.WaitForNextTickAsync(stoppingToken))
                 {
                     await tokenStore.CleanupExpiredTokenRecordsAsync();
+                    _logger.LogTrace("Cleaned up expired tokens");
                 }
             }
             catch (OperationCanceledException)
