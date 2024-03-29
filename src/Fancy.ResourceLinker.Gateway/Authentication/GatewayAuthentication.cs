@@ -76,7 +76,7 @@ internal sealed class GatewayAuthentication
             options.Authority = settings.Authority;
             options.ClientId = settings.ClientId;
             options.UsePkce = true;
-            options.ClientSecret = settings.ClientSecret;
+            //options.ClientSecret = settings.ClientSecret;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.SaveTokens = false;
             options.GetClaimsFromUserInfoEndpoint = settings.QueryUserInfoEndpoint;

@@ -17,18 +17,14 @@ internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
     public const string NAME = "TokenPassThrough";
 
     /// <summary>
-    /// The authentication settings.
+    /// The gateway authentication settings.
     /// </summary>
-    private readonly RouteAuthenticationSettings _authenticationSettings;
+    private GatewayAuthenticationSettings? _gatewayAuthenticationSettings;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="TokenPassThroughAuthStrategy"/> class.
+    /// The route authentication settings.
     /// </summary>
-    /// <param name="tokenService">The token service.</param>
-    public TokenPassThroughAuthStrategy(RouteAuthenticationSettings authenticationSettings)
-    {
-        _authenticationSettings = authenticationSettings;
-    }
+    private RouteAuthenticationSettings? _routeAuthenticationSettings;
 
     /// <summary>
     /// Gets the name of the strategy.
@@ -46,6 +42,8 @@ internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
     /// </returns>
     public Task InitializeAsync(GatewayAuthenticationSettings? gatewayAuthenticationSettings, RouteAuthenticationSettings routeAuthenticationSettings)
     {
+        _gatewayAuthenticationSettings = gatewayAuthenticationSettings;
+        _routeAuthenticationSettings = routeAuthenticationSettings;
         return Task.CompletedTask;
     }
 

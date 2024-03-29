@@ -49,7 +49,7 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     /// <summary>
     /// The name of the auth strategy.
     /// </summary>
-    public const string NAME = "AzureOnBehalfOf";
+    public const string NAME = "ClientCredentialsOnly";
 
     /// <summary>
     /// The discovery document service.

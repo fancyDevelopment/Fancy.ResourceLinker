@@ -14,15 +14,6 @@ public class NoAuthenticationAuthStrategy : IRouteAuthenticationStrategy
     public const string NAME = "NoAuthentication";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NoAuthenticationAuthStrategy"/> class.
-    /// </summary>
-    /// <param name="authenticationSettings">The authentication settings.</param>
-    public NoAuthenticationAuthStrategy(RouteAuthenticationSettings authenticationSettings)
-    {
-    }
-
-
-    /// <summary>
     /// Gets the name of the strategy.
     /// </summary>
     /// <value>
