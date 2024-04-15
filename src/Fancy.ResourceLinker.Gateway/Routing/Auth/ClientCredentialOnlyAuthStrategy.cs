@@ -65,32 +65,32 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     /// <summary>
     /// The discovery document.
     /// </summary>
-    private DiscoveryDocument? _discoveryDocument;
+    protected DiscoveryDocument? _discoveryDocument;
 
     /// <summary>
     /// The client identifier.
     /// </summary>
-    private string _clientId = string.Empty;
+    protected string _clientId = string.Empty;
 
     /// <summary>
     /// The client secret.
     /// </summary>
-    private string _clientSecret = string.Empty;
+    protected string _clientSecret = string.Empty;
 
     /// <summary>
     /// The scope.
     /// </summary>
-    private string _scope = string.Empty;
+    protected string _scope = string.Empty;
 
     /// <summary>
     /// The is initialized.
     /// </summary>
-    private bool _isInitialized = false;
+    protected bool _isInitialized = false;
 
     /// <summary>
     /// The current token response.
     /// </summary>
-    private ClientCredentialsTokenResponse? _currentTokenResponse;
+    protected ClientCredentialsTokenResponse? _currentTokenResponse;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClientCredentialOnlyAuthStrategy" /> class.
@@ -109,14 +109,14 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     /// <value>
     /// The name.
     /// </value>
-    public string Name => NAME;
+    public virtual string Name => NAME;
 
     /// <summary>
     /// Initializes the authentication strategy based on the gateway authentication settings and the route authentication settings asynchronous.
     /// </summary>
     /// <param name="gatewayAuthenticationSettings">The gateway authentication settigns.</param>
     /// <param name="routeAuthenticationSettings">The route authentication settigns.</param>
-    public async Task InitializeAsync(GatewayAuthenticationSettings? gatewayAuthenticationSettings, RouteAuthenticationSettings routeAuthenticationSettings)
+    public virtual async Task InitializeAsync(GatewayAuthenticationSettings? gatewayAuthenticationSettings, RouteAuthenticationSettings routeAuthenticationSettings)
     {
         string authority;
 
@@ -211,6 +211,21 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     }
 
     /// <summary>
+    /// Sets up the token request.
+    /// </summary>
+    /// <returns>The token request.</returns>
+    protected virtual Dictionary<string, string> SetUpTokenRequest()
+    {
+        return new Dictionary<string, string>
+        {
+            { "grant_type", "client_credentials" },
+            { "client_id", _clientId },
+            { "client_secret", _clientSecret },
+            { "scope", _scope }
+        };
+    }
+
+    /// <summary>
     /// Gets the access token asynchronous.
     /// </summary>
     /// <returns>The access token.</returns>
@@ -230,13 +245,7 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     /// <returns></returns>
     private async Task<ClientCredentialsTokenResponse> GetTokenViaClientCredentialsAsync()
     {
-        var payload = new Dictionary<string, string>
-        {
-            { "grant_type", "client_credentials" },
-            { "client_id", _clientId },
-            { "client_secret", _clientSecret },
-            { "scope", _scope }
-        };
+        Dictionary<string, string> payload = SetUpTokenRequest();
 
         HttpClient httpClient = new HttpClient();
 
@@ -262,7 +271,7 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
 
         ClientCredentialsTokenResponse? result = await response.Content.ReadFromJsonAsync<ClientCredentialsTokenResponse>();
 
-        if(result == null)
+        if (result == null)
         {
             throw new InvalidOperationException("Could not deserialize client credential token response");
         }

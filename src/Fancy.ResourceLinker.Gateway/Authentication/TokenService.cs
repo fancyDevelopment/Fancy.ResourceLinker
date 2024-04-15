@@ -64,7 +64,7 @@ public class TokenService
     {
         // Create a new guid for the new session
         string sessionId = Guid.NewGuid().ToString();
-        await SaveOrUpdateTokenAsync (sessionId, tokenResponse);
+        await SaveOrUpdateTokenAsync(sessionId, tokenResponse);
         return sessionId;
     }
 
