@@ -65,7 +65,8 @@ internal class Auth0ClientCredentialOnlyAuthStrategy : ClientCredentialOnlyAuthS
             { "grant_type", "client_credentials" },
             { "client_id", _clientId },
             { "client_secret", _clientSecret },
-            { "scope", _scope }
+            { "scope", _scope },
+            { "audience", _audience }
         };
     }
 }

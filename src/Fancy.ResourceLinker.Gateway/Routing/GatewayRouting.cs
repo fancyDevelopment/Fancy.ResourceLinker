@@ -28,6 +28,7 @@ internal static class GatewayRouting
         services.AddKeyedTransient<IRouteAuthenticationStrategy, TokenPassThroughAuthStrategy>(TokenPassThroughAuthStrategy.NAME);
         services.AddKeyedTransient<IRouteAuthenticationStrategy, AzureOnBehalfOfAuthStrategy>(AzureOnBehalfOfAuthStrategy.NAME);
         services.AddKeyedTransient<IRouteAuthenticationStrategy, ClientCredentialOnlyAuthStrategy>(ClientCredentialOnlyAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, Auth0ClientCredentialOnlyAuthStrategy>(Auth0ClientCredentialOnlyAuthStrategy.NAME);
     }
 
     /// <summary>
