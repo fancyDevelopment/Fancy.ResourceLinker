@@ -61,6 +61,16 @@ internal sealed class GatewayAuthentication
         {
             options.ExpireTimeSpan = TimeSpan.FromMinutes(settings.SessionTimeoutInMin);
             options.SlidingExpiration = true;
+            var cookieSettings = settings.CookieSettings;
+            if (cookieSettings != null)
+            {
+                if (cookieSettings.SameSiteStrict == true)
+                    options.Cookie.SameSite = SameSiteMode.Strict;
+                if(cookieSettings.Secure == true)
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                if (cookieSettings.HttpOnly == true)
+                    options.Cookie.HttpOnly = true;
+            }
         })
         .AddOpenIdConnect(options =>
         {
@@ -175,7 +185,7 @@ internal sealed class GatewayAuthentication
         app.UseAuthentication();
         app.UseAuthorization();
         //app.UseCookiePolicy();
-
+            
         // Custom Middleware to read current user into token service
         app.Use(async (context, next) =>
         {

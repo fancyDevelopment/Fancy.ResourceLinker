@@ -78,6 +78,15 @@ public class GatewayAuthenticationSettings
     /// </value>
     public string? IssuerAddressForSignOut { get; set; }
 
+    /// <summary>
+    /// Gets or sets the cookiesettings.
+    /// </summary>
+    /// <value>
+    /// Set cookiesettings.
+    /// </value>
+    public CookieSettings? CookieSettings { get; set; }
+
+
     public void Validate()
     {
         // Check required fields
@@ -96,4 +105,32 @@ public class GatewayAuthenticationSettings
             throw new InvalidOperationException("'UniqueIdentifierClaimType' is required to be set within 'AuthenticationSettings'");
         }
     }
+}
+
+public class CookieSettings
+{
+    /// <summary>
+    /// Gets or sets the minimum same site setting.
+    /// </summary>
+    /// <value>
+    /// Set SameSite policy to strict default is Lax.
+    /// </value>
+    public bool? SameSiteStrict { get; set; }
+    ///                   
+    /// <summary>
+    /// Gets or sets the secure flag.
+    /// </summary>
+    /// <value>
+    /// Set secure flag 
+    /// </value>
+    public bool? Secure { get; set; }
+    ///                   
+    /// <summary>
+    /// Gets or sets the http only settings.
+    /// </summary>
+    /// <value>
+    /// Set HttpOnly to Always.
+    /// </value>
+    public bool? HttpOnly { get; set; }
+    ///                   
 }
