@@ -65,7 +65,8 @@ To get started building an api gateway with Fancy.ResourceLinker in your ASP.NET
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGateway()
-                .LoadConfiguration(builder.Configuration.GetSection("Gateway"));
+                .LoadConfiguration(builder.Configuration.GetSection("Gateway"))
+                .AddRouting();
 ```
 
 In your application add a configuration section with the name `"Gateway"` and create the default structure within it as shown in the following sample snippet:
