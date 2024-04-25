@@ -60,7 +60,7 @@ The gateway provides different authentication strategies you can use to make aut
 
 ### Token Pass Through
 
-This is the simplest way to provide a token to a resource server is to just pass through the token you got during authenticating the user at the frontend (e.g. your Single Page Application). In this case the resource server must accept the very same token the gateway gets. To pass through the token configure the authentication at the route with the `TokenPassThrough` auth strategy as shown in the following snippet.
+The simplest way to provide a token to a resource server is to just pass through the token you got during authenticating the user at the frontend (e.g. your Single Page Application). In this case the resource server must accept the very same token the gateway gets. To pass through the token configure the authentication at the route with the `TokenPassThrough` auth strategy as shown in the following snippet.
 
 ```json
 "Gateway": {
