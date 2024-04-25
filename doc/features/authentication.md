@@ -54,7 +54,7 @@ window.location.href  = './logout';
 
 To get the ID token into the frontend, the frontend can simply call the `./userinfo` enpoint with a standard http GET request.
 
-## Authentication at the Backends/Microservices
+## Authentication at the Resource Servers
 
 The gateway provides different authentication strategies you can use to make authenticated calls to your resource servers.
 
@@ -157,13 +157,13 @@ In case you would like to use the client credential auth strategy with Auth0 as 
             "Microservice1": {
                 "BaseUrl": "http://localhost:5000",
                 "Authentication": {
-                    "Strategy": "ClientCredentialOnly",
+                    "Strategy": "Auth0ClientCredentialOnly",
                     "Options": {
                         "Authority": "<Your Authority URL>",
                         "ClientId": "<Your Client ID>",
                         "ClientSecret": "<Your Client Secret>",
                         "Scope": "<Scopes to Request>",
-                        "Audience": "<Scopes to Request>" // <-- This additional parameter is needed by Auth0
+                        "Audience": "<Audience of the API to Request>" // <-- This additional parameter is needed by Auth0
                     }
                 }
             },
@@ -172,3 +172,7 @@ In case you would like to use the client credential auth strategy with Auth0 as 
     }
 }
 ```
+
+### Custom Auth Strategy
+
+ToDo!
