@@ -12,8 +12,10 @@ public interface ITokenStore
     /// <param name="idToken">The identifier token.</param>
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
-    /// <param name="expiration">The expiration.</param>
-    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    /// <param name="expiresAt">The expires at.</param>
+    /// <returns>
+    /// A task indicating the completion of the asynchronous operation.
+    /// </returns>
     Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt);
 
     /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
+using Fancy.ResourceLinker.Gateway.Authentication;
 
-namespace Fancy.ResourceLinker.Gateway.Authentication;
+namespace Fancy.ResourceLinker.Gateway.Common;
 
 /// <summary>
 /// A service to retrieve the discovery document from an authorization server.

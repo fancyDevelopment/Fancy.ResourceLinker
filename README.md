@@ -65,28 +65,56 @@ To get started building an api gateway with Fancy.ResourceLinker in your ASP.NET
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGateway()
-                .LoadConfiguration(builder.Configuration.GetSection("Gateway"));
+                .LoadConfiguration(builder.Configuration.GetSection("Gateway"))
+                .AddRouting();
 ```
 
-In your application add a configuration section with the name `"Gateway"` and create the default structure within it as shown in the following snippet:
+In your application add a configuration section with the name `"Gateway"` and create the default structure within it as shown in the following sample snippet:
 
 ```json
 "Gateway": {
   "Routing": {
     "Routes": {
+      "Microservice1": {
+        "BaseUrl": "http://localhost:5000",
+      }
+    }
   }
 }
 ```
 
-With those three steps the library does not do anything yet but is prepared to realize one or more of the features mentioned at the beginning. 
+Finally you can ask for a type called `GatewayRouter` via dependency injection and use it to make calls to your microservices/backends using the name of your route in the configuration and a relative path to the data you would like to retrieve.
 
-## Realize Features in your Gateway
+```cs
+[ApiController]
+public class HomeController : HypermediaController
+{
+    private readonly GatewayRouter _router;
+
+    public HomeController(GatewayRouter router)
+    {
+        _router = router;
+    }
+
+    [HttpGet]
+    [Route("api/views/home")]
+    public async Task<IActionResult> GetHomeViewModel()
+    {
+        var dataFromMicroservice = _router.GetAsync<TypeToDeserializeData>("Microservice1", "api/data/123");
+        [...]
+    }
+}
+```
+
+With this basic set up you can make calls to your microservices easily and change the base address in the configuration. Read through the advanced features docs to extend your api gateway with more capabilities.
+
+## Realize Advanced Features in your Gateway
 
 To learn how each single feature can be realized have a look to the following individual guidelines.
 
 * Aggregating data from differend sources into a client optimized model - Comming Soon
 * Provide different apis and/or resources under the same origin - Comming Soon
 * Create truly RESTful services - Comming Soon
-* Let the gateway act as authentication facade - Comming Soon
+* [Let the gateway act as authentication facade](./doc/features/authentication.md)
 
 

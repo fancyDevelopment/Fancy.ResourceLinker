@@ -1,4 +1,6 @@
-﻿namespace Fancy.ResourceLinker.Gateway.Authentication;
+﻿using System.Collections.Concurrent;
+
+namespace Fancy.ResourceLinker.Gateway.Authentication;
 
 /// <summary>
 /// A simple implementation of <see cref="ITokenStore"/> to store tokens in memory.
@@ -9,7 +11,7 @@ internal class InMemoryTokenStore : ITokenStore
     /// <summary>
     /// A dictionary mapping tokens to sessions.
     /// </summary>
-    private Dictionary<string, TokenRecord> _tokens = new Dictionary<string, TokenRecord>();
+    private ConcurrentDictionary<string, TokenRecord> _tokens = new ConcurrentDictionary<string, TokenRecord>();
 
     /// <summary>
     /// Saves the or update tokens asynchronous.
@@ -19,7 +21,9 @@ internal class InMemoryTokenStore : ITokenStore
     /// <param name="accessToken">The access token.</param>
     /// <param name="refreshToken">The refresh token.</param>
     /// <param name="expiration">The expiration.</param>
-    /// <returns>A task indicating the completion of the asynchronous operation.</returns>
+    /// <returns>
+    /// A task indicating the completion of the asynchronous operation.
+    /// </returns>
     public Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiration)
     {
         _tokens[sessionId] = new TokenRecord(sessionId, idToken, accessToken, refreshToken, expiration );
@@ -45,11 +49,11 @@ internal class InMemoryTokenStore : ITokenStore
     /// <returns>A task indicating the completion of the asynchronous operation.</returns>
     public Task CleanupExpiredTokenRecordsAsync()
     {
-        Dictionary<string, TokenRecord> validRecords = new Dictionary<string, TokenRecord> ();
+        ConcurrentDictionary<string, TokenRecord> validRecords = new ConcurrentDictionary<string, TokenRecord> ();
 
         foreach(var record in _tokens.Values)
         {
-            if(record.ExpiresAt > DateTime.UtcNow) validRecords.Add(record.SessionId, record);
+            if(record.ExpiresAt > DateTime.UtcNow) validRecords[record.SessionId] = record;
         }
 
         _tokens = validRecords;

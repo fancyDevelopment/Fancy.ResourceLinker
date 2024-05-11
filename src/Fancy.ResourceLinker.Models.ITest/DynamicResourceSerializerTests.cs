@@ -63,7 +63,7 @@ public class DynamicResourceSerializerTests
         Assert.AreEqual("foobar", deserializedObject.StringProperty);
         Assert.AreEqual(true, deserializedObject.BoolProperty);
         Assert.AreEqual("subObjFoobar", deserializedObject.ObjProperty.SubObjProperty);
-        Assert.AreEqual(null, deserializedObject.NullProperty);
+        Assert.IsNull(deserializedObject.NullProperty);
         Assert.AreEqual(5, deserializedObject.ArrayProperty[0]);
         Assert.AreEqual("foo", deserializedObject.ArrayProperty[1]);
         Assert.AreEqual("fooInArray", deserializedObject.ArrayProperty[2].ObjInArrProperty);
@@ -92,7 +92,7 @@ public class DynamicResourceSerializerTests
         Assert.AreEqual("foobar", deserializedObject.StringProperty);
         Assert.AreEqual(true, deserializedObject.BoolProperty);
         Assert.AreEqual("subObjFoobar", deserializedObject.ObjProperty.SubObjProperty);
-        Assert.AreEqual(null, deserializedObject.NullProperty);
+        Assert.IsNull(deserializedObject.NullProperty);
         Assert.AreEqual(5, deserializedObject.ArrayProperty[0]);
         Assert.AreEqual("foo", deserializedObject.ArrayProperty[1]);
         Assert.AreEqual("fooInArray", deserializedObject.ArrayProperty[2].ObjInArrProperty);

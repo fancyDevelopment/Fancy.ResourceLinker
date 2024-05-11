@@ -10,7 +10,7 @@ namespace Fancy.ResourceLinker.Gateway.Authentication;
 /// <summary>
 /// A token service with handling logic for tokens needed by the gateway authentication feature.
 /// </summary>
-internal class TokenService
+public class TokenService
 {
     /// <summary>
     /// The token store.
@@ -64,7 +64,7 @@ internal class TokenService
     {
         // Create a new guid for the new session
         string sessionId = Guid.NewGuid().ToString();
-        await SaveOrUpdateTokenAsync (sessionId, tokenResponse);
+        await SaveOrUpdateTokenAsync(sessionId, tokenResponse);
         return sessionId;
     }
 
@@ -87,7 +87,7 @@ internal class TokenService
     /// Gets the access token of the current session asynchronous.
     /// </summary>
     /// <returns>The access token.</returns>
-    internal async Task<string> GetAccessTokenAsync()
+    public async Task<string> GetAccessTokenAsync()
     {
         if(CurrentSessionId == null)
         {
@@ -135,7 +135,7 @@ internal class TokenService
     /// Gets the access token claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
-    internal async Task<IEnumerable<Claim>?> GetAccessTokenClaimsAsync()
+    public async Task<IEnumerable<Claim>?> GetAccessTokenClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 
@@ -155,7 +155,7 @@ internal class TokenService
     /// Gets the identity claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
-    internal async Task<IEnumerable<Claim>?> GetIdentityClaimsAsync()
+    public async Task<IEnumerable<Claim>?> GetIdentityClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 

@@ -1,4 +1,6 @@
-﻿namespace Fancy.ResourceLinker.Gateway.Routing;
+﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
+
+namespace Fancy.ResourceLinker.Gateway.Routing;
 
 /// <summary>
 /// A class to hold all settings required to configure the gateway routing feature.
@@ -60,12 +62,34 @@ public class RouteSettings
     public string? PathMatch { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the authentication shall be enforced by the gateway.
+    /// Gets or sets the authentication settings.
     /// </summary>
     /// <value>
-    ///   <c>true</c> if the authentication shall be enforced; otherwise, <c>false</c>.
+    /// The authentication settings.
     /// </value>
-    public bool EnforceAuthentication { get; set; }
+    public RouteAuthenticationSettings Authentication { get; set; } = new RouteAuthenticationSettings();
+}
+
+/// <summary>
+/// A class to hold all setting required for authenticating to a backend.
+/// </summary>
+public class RouteAuthenticationSettings
+{
+    /// <summary>
+    /// Gets or sets the strategy.
+    /// </summary>
+    /// <value>
+    /// The strategy.
+    /// </value>
+    public string Strategy { get; set; } = "NoAuthentication";
+
+    /// <summary>
+    /// Gets or sets the options.
+    /// </summary>
+    /// <value>
+    /// The options.
+    /// </value>
+    public IDictionary<string, string> Options { get; set; } = new Dictionary<string, string>();
 }
 
 
