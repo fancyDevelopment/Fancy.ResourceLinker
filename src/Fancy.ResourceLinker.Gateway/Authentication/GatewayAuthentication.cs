@@ -15,8 +15,6 @@ using System.Security.Claims;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-// ToDo: think about token exchange
-
 /// <summary>
 /// Class with helper methods to set up authentication feature.
 /// </summary>
@@ -75,7 +73,7 @@ internal sealed class GatewayAuthentication
             options.Authority = settings.Authority;
             options.ClientId = settings.ClientId;
             options.UsePkce = true;
-            //options.ClientSecret = settings.ClientSecret;
+            options.ClientSecret = string.IsNullOrWhiteSpace(settings.ClientSecret) ? null : settings.ClientSecret;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.SaveTokens = false;
             options.GetClaimsFromUserInfoEndpoint = settings.QueryUserInfoEndpoint;
