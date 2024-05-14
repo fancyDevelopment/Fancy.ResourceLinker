@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Gateway.AntiForgery;
 using Fancy.ResourceLinker.Gateway.Authentication;
+using Fancy.ResourceLinker.Gateway.Common;
 using Fancy.ResourceLinker.Gateway.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,6 +102,7 @@ public static class ServiceCollectionExtensions
     /// <returns>A gateway builder.</returns>
     public static GatewayBuilder AddGateway(this IServiceCollection services)
     {
+        GatewayCommon.AddGatewayCommonServices(services);
         return new GatewayBuilder(services);
     }
 
@@ -112,7 +114,13 @@ public static class ServiceCollectionExtensions
     /// <returns>A configured gateway builder.</returns>
     public static ConfiguredGatewayBuilder LoadConfiguration(this GatewayBuilder gatewayBuilder, IConfiguration config)
     {
-        GatewaySettings settings = config.Get<GatewaySettings>();
+        GatewaySettings? settings = config.Get<GatewaySettings>();
+
+        if(settings == null)
+        {
+            throw new InvalidOperationException("The provided configuration does not contain proper settings");
+        }
+
         if (settings.Authentication != null) gatewayBuilder.Services.AddSingleton(settings.Authentication);
         if (settings.Routing != null) gatewayBuilder.Services.AddSingleton(settings.Routing);
         ConfiguredGatewayBuilder configuredGatewayBuilder = new ConfiguredGatewayBuilder(gatewayBuilder.Services, settings);

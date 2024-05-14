@@ -1,7 +1,6 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
+﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using System.ComponentModel.DataAnnotations;
 using Yarp.ReverseProxy.Configuration;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
@@ -17,10 +16,19 @@ internal static class GatewayRouting
     /// <param name="services">The services.</param>
     internal static void AddGatewayRouting(IServiceCollection services, GatewayRoutingSettings settings)
     {
+        // Register all other needed services
         services.AddHttpForwarder();
         services.AddSingleton(settings); 
         services.AddTransient<GatewayRouter>();
         services.AddReverseProxy().AddGatewayRoutes(settings);
+
+        // Set up routing authentication subsystem
+        services.AddSingleton<RouteAuthenticationManager>();
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, NoAuthenticationAuthStrategy>(NoAuthenticationAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, TokenPassThroughAuthStrategy>(TokenPassThroughAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, AzureOnBehalfOfAuthStrategy>(AzureOnBehalfOfAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, ClientCredentialOnlyAuthStrategy>(ClientCredentialOnlyAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, Auth0ClientCredentialOnlyAuthStrategy>(Auth0ClientCredentialOnlyAuthStrategy.NAME);
     }
 
     /// <summary>
@@ -56,9 +64,8 @@ internal static class GatewayRouting
             {
                 RouteId = routeSettings.Key,
                 ClusterId = routeSettings.Key,
-                AuthorizationPolicy = routeSettings.Value.EnforceAuthentication ? GatewayAuthentication.AuthenticationPolicyName : null,
                 Match = new RouteMatch { Path = routeSettings.Value.PathMatch },
-                Metadata = new Dictionary<string, string> { { "EnforceAuthentication", routeSettings.Value.EnforceAuthentication ? "True" : "False" } }
+                Metadata = new Dictionary<string, string> { { "RouteName", routeSettings.Key } }
             });
 
             clusters.Add(new ClusterConfig

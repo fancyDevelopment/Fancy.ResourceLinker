@@ -6,13 +6,13 @@ namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 /// <summary>
 /// A database context to hold all information needed to be persisted in a gateway.
 /// </summary>
-internal class GatewayDbContext : DbContext, IDataProtectionKeyContext
+public abstract class GatewayDbContext : DbContext, IDataProtectionKeyContext
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="GatewayDbContext"/> class.
     /// </summary>
     /// <param name="options">The options.</param>
-    public GatewayDbContext(DbContextOptions<GatewayDbContext> options) : base(options) { }
+    public GatewayDbContext(DbContextOptions options) : base(options) { }
 
     /// <summary>
     /// Gets or sets the data protection keys.

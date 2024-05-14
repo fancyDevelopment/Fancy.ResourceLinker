@@ -68,7 +68,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     ///   <c>true</c> if the handler shall query the user info endpoint of the authorization server; otherwise, <c>false</c>.
     /// </value>
-    public bool QueryUserInfoEndpoint { get; set; } = true;
+    public bool QueryUserInfoEndpoint { get; set; } = false;
 
     /// <summary>
     /// Gets or sets the issuer address for sign out.

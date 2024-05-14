@@ -15,8 +15,6 @@ using System.Security.Claims;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
-// ToDo: think about token exchange
-
 /// <summary>
 /// Class with helper methods to set up authentication feature.
 /// </summary>
@@ -40,7 +38,6 @@ internal sealed class GatewayAuthentication
     internal static void AddGatewayAuthentication(IServiceCollection services, GatewayAuthenticationSettings settings)
     {
         _settings = settings;
-        services.AddSingleton<DiscoveryDocumentService>();
         services.AddSingleton<TokenClient>();
         services.AddScoped<TokenService>();
         services.AddHostedService<TokenCleanupBackgroundService>();
@@ -79,7 +76,7 @@ internal sealed class GatewayAuthentication
             options.Authority = settings.Authority;
             options.ClientId = settings.ClientId;
             options.UsePkce = true;
-            options.ClientSecret = settings.ClientSecret;
+            options.ClientSecret = string.IsNullOrWhiteSpace(settings.ClientSecret) ? null : settings.ClientSecret;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.SaveTokens = false;
             options.GetClaimsFromUserInfoEndpoint = settings.QueryUserInfoEndpoint;
@@ -177,8 +174,7 @@ internal sealed class GatewayAuthentication
         // Add the default asp.net core middlewares for authentication and authorization
         app.UseAuthentication();
         app.UseAuthorization();
-        //app.UseCookiePolicy();
-            
+
         // Custom Middleware to read current user into token service
         app.Use(async (context, next) =>
         {

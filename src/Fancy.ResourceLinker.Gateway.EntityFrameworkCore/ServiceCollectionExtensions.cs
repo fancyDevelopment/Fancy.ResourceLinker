@@ -1,6 +1,5 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
@@ -16,20 +15,22 @@ public static class ServiceCollectionExtensions
     private static bool _dbContextAdded = false;
 
     /// <summary>
-    /// Adds the database context to the gateway.
+    /// Uses the provided database context in the gateway.
     /// </summary>
-    /// <typeparam name="T">A type of a gateway builder.</typeparam>
+    /// <typeparam name="TDbContext">The type of the database context.</typeparam>
     /// <param name="builder">The builder.</param>
-    /// <param name="optionsAction">The options action.</param>
-    /// <returns>A type of a gateway builder.</returns>
-    public static T AddDbContext<T>(this T builder, Action<DbContextOptionsBuilder> optionsAction) where T : GatewayBuilder
+    /// <returns>
+    /// A type of a gateway builder.
+    /// </returns>
+    /// <exception cref="System.InvalidOperationException">DbContext can be added only once</exception>
+    public static GatewayBuilder UseDbContext<TDbContext>(this GatewayBuilder builder) where TDbContext : GatewayDbContext
     {
         if(_dbContextAdded)
         {
             throw new InvalidOperationException("DbContext can be added only once");
         }
 
-        builder.Services.AddDbContext<GatewayDbContext>(optionsAction);
+        builder.Services.AddScoped<GatewayDbContext>(services => services.GetRequiredService<TDbContext>());
 
         _dbContextAdded = true;
 
@@ -45,7 +46,7 @@ public static class ServiceCollectionExtensions
     {
         if (!_dbContextAdded)
         {
-            throw new InvalidOperationException("Call 'AddDbContext' before configuring options");
+            throw new InvalidOperationException("Call 'AddDbContext' before configuring options using the db context");
         }
 
         builder.Services.AddScoped<ITokenStore, DbTokenStore>();
@@ -62,7 +63,7 @@ public static class ServiceCollectionExtensions
     {
         if (!_dbContextAdded)
         {
-            throw new InvalidOperationException("Call 'AddDbContext' before configuring options");
+            throw new InvalidOperationException("Call 'AddDbContext' before configuring options using the db context");
         }
 
         builder.Services.AddDataProtection().PersistKeysToDbContext<GatewayDbContext>();

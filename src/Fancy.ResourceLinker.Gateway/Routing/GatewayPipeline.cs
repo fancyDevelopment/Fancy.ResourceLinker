@@ -1,9 +1,7 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
+﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
@@ -23,15 +21,12 @@ internal static class GatewayPipeline
             // Check if token shall be added
             var proxyFeature = context.GetReverseProxyFeature();
             if (proxyFeature.Route.Config.Metadata != null
-                && proxyFeature.Route.Config.Metadata.ContainsKey("EnforceAuthentication")
-                && proxyFeature.Route.Config.Metadata["EnforceAuthentication"] == "True")
+                && proxyFeature.Route.Config.Metadata.ContainsKey("RouteName"))
             {
-                // Add access token to request
-                var tokenService = context.RequestServices.GetRequiredService<TokenService>();
-                var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Fancy.ResourceLinker.Gateway.Routing.GatewayPipeline");
-                logger.LogDebug("Adding Authorization header and token into request to " + context.Request.GetDisplayUrl());
-                var accessToken = await tokenService.GetAccessTokenAsync();
-                context.Request.Headers.Add("Authorization", "Bearer " + accessToken);
+                string routeName = proxyFeature.Route.Config.Metadata["RouteName"];
+                RouteAuthenticationManager authStrategyFactory = context.RequestServices.GetRequiredService<RouteAuthenticationManager>();
+                IRouteAuthenticationStrategy authStrategy = await authStrategyFactory.GetAuthStrategyAsync(routeName);
+                await authStrategy.SetAuthenticationAsync(context);
             }
             await next().ConfigureAwait(false);
         });

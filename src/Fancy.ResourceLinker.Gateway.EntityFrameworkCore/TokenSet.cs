@@ -5,10 +5,10 @@ namespace Fancy.ResourceLinker.Gateway.EntityFrameworkCore;
 /// <summary>
 /// A entity object to save token sets to database.
 /// </summary>
-internal class TokenSet
+public class TokenSet
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="TokenSet"/> class.
+    /// Initializes a new instance of the <see cref="TokenSet" /> class.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
     /// <param name="idToken">The identifier token.</param>
