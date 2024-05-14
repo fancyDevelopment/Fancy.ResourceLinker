@@ -84,7 +84,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// Set cookiesettings.
     /// </value>
-    public CookieSettings? CookieSettings { get; set; }
+    public CookieSettings CookieSettings { get; set; } = new CookieSettings();
 
 
     public void Validate()
@@ -110,27 +110,29 @@ public class GatewayAuthenticationSettings
 public class CookieSettings
 {
     /// <summary>
-    /// Gets or sets the minimum same site setting.
+    /// Gets or sets the SameSite policy
     /// </summary>
     /// <value>
-    /// Set SameSite policy to strict default is Lax.
+    /// true || Not set == Strict
+    /// false == Lax
     /// </value>
-    public bool? SameSiteStrict { get; set; }
+    public bool SameSiteStrict { get; set; } = true;
     ///                   
     /// <summary>
     /// Gets or sets the secure flag.
     /// </summary>
     /// <value>
-    /// Set secure flag 
+    /// true || Not set == Always
+    /// false == SameAsRequest
     /// </value>
-    public bool? Secure { get; set; }
+    public bool Secure { get; set; } = true;
     ///                   
     /// <summary>
-    /// Gets or sets the http only settings.
+    /// Gets or sets the HttpOnly setting.
     /// </summary>
     /// <value>
-    /// Set HttpOnly to Always.
+    /// true || Not set == true
+    /// false == false
     /// </value>
-    public bool? HttpOnly { get; set; }
-    ///                   
+    public bool HttpOnly { get; set; } = true;                 
 }

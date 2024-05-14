@@ -61,16 +61,9 @@ internal sealed class GatewayAuthentication
         {
             options.ExpireTimeSpan = TimeSpan.FromMinutes(settings.SessionTimeoutInMin);
             options.SlidingExpiration = true;
-            var cookieSettings = settings.CookieSettings;
-            if (cookieSettings != null)
-            {
-                if (cookieSettings.SameSiteStrict == true)
-                    options.Cookie.SameSite = SameSiteMode.Strict;
-                if(cookieSettings.Secure == true)
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                if (cookieSettings.HttpOnly == true)
-                    options.Cookie.HttpOnly = true;
-            }
+            options.Cookie.SameSite = settings.CookieSettings.SameSiteStrict == true ? SameSiteMode.Strict : SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = settings.CookieSettings.Secure == true ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+            options.Cookie.HttpOnly = settings.CookieSettings.HttpOnly;   
         })
         .AddOpenIdConnect(options =>
         {
