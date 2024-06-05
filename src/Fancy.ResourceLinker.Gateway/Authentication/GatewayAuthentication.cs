@@ -54,7 +54,6 @@ internal sealed class GatewayAuthentication
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
-        // test
         // Add cookie settings
         .AddCookie(options =>
         {
