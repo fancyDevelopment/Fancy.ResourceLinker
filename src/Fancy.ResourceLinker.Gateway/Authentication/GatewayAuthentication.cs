@@ -54,10 +54,14 @@ internal sealed class GatewayAuthentication
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
+        // Add cookie settings
         .AddCookie(options =>
         {
             options.ExpireTimeSpan = TimeSpan.FromMinutes(settings.SessionTimeoutInMin);
             options.SlidingExpiration = true;
+            options.Cookie.SameSite = settings.CookieSettings.SameSiteStrict == true ? SameSiteMode.Strict : SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = settings.CookieSettings.Secure == true ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+            options.Cookie.HttpOnly = settings.CookieSettings.HttpOnly;   
         })
         .AddOpenIdConnect(options =>
         {
