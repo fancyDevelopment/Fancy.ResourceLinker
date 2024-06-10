@@ -2,6 +2,7 @@
 using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -11,7 +12,7 @@ using Yarp.ReverseProxy.Forwarder;
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
 /// <summary>
-/// A class to provide routing functionality for manual routing implementations.
+/// A class to provide routing functionality for manual routing and data aggregation implementations.
 /// </summary>
 public class GatewayRouter
 {
@@ -111,11 +112,8 @@ public class GatewayRouter
     /// <returns>The result deserialized into the specified resource type.</returns>
     private async Task<TResource?> SendAsync<TResource>(HttpRequestMessage request, string routeName) where TResource : class
     {
-        if (_settings.ResourceProxy != null)
-        {
-            request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
-        }
-
+        if (_settings.ResourceProxy != null) request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
+ 
         // Set authentication to request
         IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
         await authStrategy.SetAuthenticationAsync(_serviceProvider, request);
@@ -129,10 +127,8 @@ public class GatewayRouter
             string jsonResponse = await responseMessage.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<TResource>(jsonResponse, _serializerOptions) ?? throw new Exception("Error on deserialization of result");
         }
-        else
-        {
-            return default;
-        }
+
+        return default;
     }
 
     /// <summary>
@@ -157,14 +153,16 @@ public class GatewayRouter
     }
 
     /// <summary>
-    /// Gets data from a url and deserializes it into a given type.
+    /// Get data from a microservice specified by its key of a provided route and deserializes it into a given type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="requestUri">The uri of the data to get.</param>
     /// <param name="routeName">The name of the route to use.</param>
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
     /// <returns>The result deserialized into the specified resource type.</returns>
-    private async Task<TResource> GetAsync<TResource>(Uri requestUri, string routeName) where TResource : class
+    public async Task<TResource> GetAsync<TResource>(string routeName, string relativeUrl) where TResource : class
     {
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
         {
@@ -174,32 +172,21 @@ public class GatewayRouter
 
         var result = await SendAsync<TResource>(request, routeName);
 
-        if(result == null) throw new ApplicationException("No Content was provided by the server");
+        if (result == null) throw new ApplicationException("No Content was provided by the server");
 
         return result;
     }
 
     /// <summary>
-    /// Get data from a microservice specified by its key of a provided route and deserializes it into a given type.
-    /// </summary>
-    /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="routeName">The name of the route to use.</param>
-    /// <param name="relativeUrl">The relative url to the endpoint.</param>
-    /// <returns>The result deserialized into the specified resource type.</returns>
-    public Task<TResource> GetAsync<TResource>(string routeName, string relativeUrl) where TResource : class
-    {
-        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return GetAsync<TResource>(requestUri, routeName);
-    }
-
-    /// <summary>
     /// Puts data to a specific uri.
     /// </summary>
-    /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="content">The content to send - will be serialized as json.</param>
     /// <param name="routeName">The name of the route to use.</param>
-    private Task PutAsync(Uri requestUri, object content, string routeName)
-    { 
+    /// <param name="relativeUrl">The relative url to the endpoint.</param>
+    /// <param name="content">The content to send - will be serialized as json.</param>
+    public Task PutAsync(string routeName, string relativeUrl, object content)
+    {
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
         {
@@ -209,39 +196,6 @@ public class GatewayRouter
         };
 
         return SendAsync(request, routeName);
-    }
-
-    /// <summary>
-    /// Puts data to a specific uri.
-    /// </summary>
-    /// <param name="routeKey">The key of the route to use.</param>
-    /// <param name="relativeUrl">The relative url to the endpoint.</param>
-    /// <param name="content">The content to send - will be serialized as json.</param>
-    public Task PutAsync(string routeKey, string relativeUrl, object content)
-    {
-        Uri requestUri = CombineUris(GetBaseUrl(routeKey), relativeUrl);
-        return PutAsync(requestUri, content, routeKey);
-    }
-
-    /// <summary>
-    /// Puts data to a specific uri.
-    /// </summary>
-    /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="routeName">The name of the route to use.</param>
-    /// <returns>The result deserialized into the specified resource type.</returns>
-    private Task<TResource?> PutAsync<TResource>(Uri requestUri, object content, string routeName) where TResource: class
-    {
-        // Set up request
-        HttpRequestMessage request = new HttpRequestMessage()
-        {
-            RequestUri = requestUri,
-            Method = HttpMethod.Put,
-            Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
-        };
-
-        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
@@ -255,26 +209,16 @@ public class GatewayRouter
     public Task<TResource?> PutAsync<TResource>(string routeName, string relativeUrl, object content) where TResource: class
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return PutAsync<TResource>(requestUri, content, routeName);
-    }
 
-    /// <summary>
-    /// Post data to a specific uri.
-    /// </summary>
-    /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="routeName">The name of the route to use.</param>
-    private Task PostAsync(Uri requestUri, object content, string routeName)
-    {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
         {
             RequestUri = requestUri,
-            Method = HttpMethod.Post,
+            Method = HttpMethod.Put,
             Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync(request, routeName);
+        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
@@ -286,19 +230,7 @@ public class GatewayRouter
     public Task PostAsync(string routeName, string relativeUrl, object content)
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return PostAsync(requestUri, content, routeName);
-    }
 
-    /// <summary>
-    /// Post data to a specific uri and return the result deserialized into the specified resource type.
-    /// </summary>
-    /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="content">The content to send - will be serialized as json.</param>
-    /// <param name="routeName">The name of the route to use.</param>
-    /// <returns>The result deserialized into the specified resource type.</returns>
-    private Task<TResource?> PostAsync<TResource>(Uri requestUri, object content, string routeName) where TResource : class
-    {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
         {
@@ -307,7 +239,7 @@ public class GatewayRouter
             Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync<TResource>(request, routeName);
+        return SendAsync(request, routeName);
     }
 
     /// <summary>
@@ -321,24 +253,16 @@ public class GatewayRouter
     public Task<TResource?> PostAsync<TResource>(string routeName, string relativeUrl, object content) where TResource : class
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return PostAsync<TResource>(requestUri, content, routeName);
-    }
 
-    /// <summary>
-    /// Delete data from a specific URI
-    /// </summary>
-    /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="routeName">The name of the route to use.</param>
-    private Task DeleteAsync(Uri requestUri, string routeName)
-    {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
         {
             RequestUri = requestUri,
-            Method = HttpMethod.Delete,
+            Method = HttpMethod.Post,
+            Content = new StringContent(JsonSerializer.Serialize(content), Encoding.UTF8, "application/json")
         };
 
-        return SendAsync(request, routeName);
+        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
@@ -349,18 +273,7 @@ public class GatewayRouter
     public Task DeleteAsync(string routeName, string relativeUrl)
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return DeleteAsync(requestUri, routeName);
-    }
 
-    /// <summary>
-    /// Delete data from a specific URI and return the result deserialized into the specified resource type.
-    /// </summary>
-    /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="requestUri">The uri to send to.</param>
-    /// <param name="routeName">The name of the route to use.</param>
-    /// <returns>The result deserialized into the specified resource type.</returns>
-    private Task<TResource?> DeleteAsync<TResource>(Uri requestUri, string routeName) where TResource : class
-    {
         // Set up request
         HttpRequestMessage request = new HttpRequestMessage()
         {
@@ -368,7 +281,7 @@ public class GatewayRouter
             Method = HttpMethod.Delete,
         };
 
-        return SendAsync<TResource>(request, routeName);
+        return SendAsync(request, routeName);
     }
 
     /// <summary>
@@ -381,37 +294,15 @@ public class GatewayRouter
     public Task<TResource?> DeleteAsync<TResource>(string routeName, string relativeUrl) where TResource : class
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return DeleteAsync<TResource>(requestUri, routeName);
-    }
 
-    /// <summary>
-    /// Gets data from a url and deserializes it into a given type. If data is available in the cache and not older
-    /// as the age specified the data is returned from the chache, if not data is retrieved from the origin and written to the cache.
-    /// </summary>
-    /// <typeparam name="TResource">The type of the resource.</typeparam>
-    /// <param name="requestUri">The uri of the data to get.</param>
-    /// <param name="maxResourceAge">The maximum age of the resource which is acceptable.</param>
-    /// <param name="routeName">The name of the route to use.</param>
-    /// <returns>
-    /// The result deserialized into the specified resource type.
-    /// </returns>
-    public async Task<TResource> GetCachedAsync<TResource>(Uri requestUri, TimeSpan maxResourceAge, string routeName) where TResource : class
-    {
-        string cacheKey = requestUri.ToString();
+        // Set up request
+        HttpRequestMessage request = new HttpRequestMessage()
+        {
+            RequestUri = requestUri,
+            Method = HttpMethod.Delete,
+        };
 
-        // Check if we can get the resource from cache
-        TResource? data;
-        if (_resourceCache.TryRead(cacheKey, maxResourceAge, out data))
-        {
-            return data ?? throw new ApplicationException("Error on reading item from cache");
-        }
-        else
-        {
-            // Get resource from origin and write it to the cache
-            data = await GetAsync<TResource>(requestUri, routeName);
-            _resourceCache.Write(cacheKey, data);
-            return data;
-        }
+        return SendAsync<TResource>(request, routeName);
     }
 
     /// <summary>
@@ -426,20 +317,40 @@ public class GatewayRouter
     /// <returns>
     /// The result deserialized into the specified resource type.
     /// </returns>
-    public Task<TResource> GetCachedAsync<TResource>(string routeName, string relativeUrl, TimeSpan maxResourceAge) where TResource : class
+    public async Task<TResource> GetCachedAsync<TResource>(string routeName, string relativeUrl, TimeSpan maxResourceAge) where TResource : class
     {
         Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
-        return GetCachedAsync<TResource>(requestUri, maxResourceAge, routeName);
+
+        string cacheKey = requestUri.ToString();
+
+        // Check if we can get the resource from cache
+        TResource? data;
+        if (_resourceCache.TryRead(cacheKey, maxResourceAge, out data))
+        {
+            return data ?? throw new ApplicationException("Error on reading item from cache");
+        }
+        else
+        {
+            // Get resource from origin and write it to the cache
+            data = await GetAsync<TResource>(routeName, relativeUrl);
+            _resourceCache.Write(cacheKey, data);
+            return data;
+        }
     }
 
     /// <summary>
-    /// Sends the current request to a microservice.
+    /// Sends the current request to a microservice with the same relative url as the current request.
     /// </summary>
+    /// <param name="httpContext">The HTTP context.</param>
     /// <param name="routeName">The name of the route to use.</param>
-    /// <param name="relativeUrl">The relative url to the endpoint.</param>
-    /// <returns>The response of the call to the microservice as IActionResult</returns>
-    public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeName, string relativeUrl)
+    /// <returns>
+    /// The response of the call to the microservice as IActionResult
+    /// </returns>
+    public async Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeName)
     {
+        string relativeUrl = httpContext.Request.Path + httpContext.Request.QueryString;
+        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
+
         HttpRequestMessage proxyRequest = new HttpRequestMessage();
 
         if (httpContext.Request.ContentLength > 0)
@@ -452,8 +363,6 @@ public class GatewayRouter
         }
 
         proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
-
-        Uri requestUri = CombineUris(GetBaseUrl(routeName), relativeUrl);
 
         if (_settings.ResourceProxy != null)
         {
@@ -499,16 +408,6 @@ public class GatewayRouter
 
             }
         }
-    }
-
-    /// <summary>
-    /// Sends the current request to a microservice with the same relative url as the current request.
-    /// </summary>
-    /// <param name="baseUriKey">The key to the uri of the microservcie to send the request to.</param>
-    /// <returns>The response of the call to the microservice as IActionResult</returns>
-    public Task<IActionResult> ProxyAsync(HttpContext httpContext, string routeKey)
-    {
-        return ProxyAsync(httpContext, routeKey, httpContext.Request.Path + httpContext.Request.QueryString);
     }
 
     /// <summary>
