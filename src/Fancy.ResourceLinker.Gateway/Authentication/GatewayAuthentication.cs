@@ -67,12 +67,6 @@ internal sealed class GatewayAuthentication
         {
             HttpClient defaultBackchannel = new HttpClient();
 
-            if (settings.Authority.StartsWith("https://login.microsoftonline.com"))
-            {
-                // Add an origin header because it is expected by Microsoft Entra Id (the value of the header doesn't matter)
-                defaultBackchannel.DefaultRequestHeaders.Add("Origin", "Fancy.ResourceLinker.Gateway");
-            }
-
             options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.Authority = settings.Authority;
             options.ClientId = settings.ClientId;
