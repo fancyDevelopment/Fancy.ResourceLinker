@@ -138,41 +138,6 @@ public class TokenClient
     }
 
     /// <summary>
-    /// Gets thae token via client credentials flow asynchronous.
-    /// </summary>
-    /// <returns>The client credentials flow token response.</returns>
-    public async Task<ClientCredentialsTokenResponse?> GetTokenViaClientCredentialsAsync()
-    {
-        DiscoveryDocument discoveryDocument = await GetDiscoveryDocumentAsync();
-
-        var payload = new Dictionary<string, string>
-        {
-            { "grant_type", "client_credentials" },
-            { "client_id", _settings.ClientId },
-            { "client_secret", _settings.ClientSecret },
-            { "scope", _settings.ClientCredentialsScopes }
-        };
-
-        HttpClient httpClient = new HttpClient();
-
-        HttpRequestMessage request = new HttpRequestMessage
-        {
-            RequestUri = new Uri(discoveryDocument.TokenEndpoint),
-            Method = HttpMethod.Post,
-            Content = new FormUrlEncodedContent(payload)
-        };
-
-        HttpResponseMessage response = await httpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        return await response.Content.ReadFromJsonAsync<ClientCredentialsTokenResponse>();
-    }
-
-    /// <summary>
     /// Gets the discovery document asynchronous.
     /// </summary>
     /// <returns>The discovery document.</returns>

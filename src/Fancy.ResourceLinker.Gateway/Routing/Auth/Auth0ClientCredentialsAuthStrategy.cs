@@ -5,17 +5,17 @@ using Microsoft.Extensions.Logging;
 namespace Fancy.ResourceLinker.Gateway.Routing.Auth;
 
 /// <summary>
-/// A route authentication strategy running the OAuth client credential flow only. 
+/// A route authentication strategy running the OAuth client credential flow. 
 /// </summary>
 /// <remarks>
 /// In some situations, auth0 requires an audience parameter in the request. This once can be added with this auth strategy.
 /// </remarks>
-internal class Auth0ClientCredentialOnlyAuthStrategy : ClientCredentialOnlyAuthStrategy
+internal class Auth0ClientCredentialsAuthStrategy : ClientCredentialsAuthStrategy
 {
     /// <summary>
     /// The name of the auth strategy.
     /// </summary>
-    public new const string NAME = "Auth0ClientCredentialOnly";
+    public new const string NAME = "Auth0ClientCredentials";
 
     // <summary>
     /// The auth0 audience.
@@ -23,11 +23,11 @@ internal class Auth0ClientCredentialOnlyAuthStrategy : ClientCredentialOnlyAuthS
     private string _audience = string.Empty;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ClientCredentialOnlyAuthStrategy" /> class.
+    /// Initializes a new instance of the <see cref="ClientCredentialsAuthStrategy" /> class.
     /// </summary>
     /// <param name="discoveryDocumentService">The discovery document service.</param>
     /// <param name="logger">The logger.</param>
-    public Auth0ClientCredentialOnlyAuthStrategy(DiscoveryDocumentService discoveryDocumentService, ILogger<Auth0ClientCredentialOnlyAuthStrategy> logger) : base(discoveryDocumentService, logger)
+    public Auth0ClientCredentialsAuthStrategy(DiscoveryDocumentService discoveryDocumentService, ILogger<Auth0ClientCredentialsAuthStrategy> logger) : base(discoveryDocumentService, logger)
     {
     }
 

@@ -82,7 +82,7 @@ internal sealed class GatewayAuthentication
             options.Backchannel = defaultBackchannel;
 
             options.Scope.Clear();
-            foreach (string scope in settings.AuthorizationCodeScopes.Split(' '))
+            foreach (string scope in settings.Scopes.Split(' '))
             {
                 options.Scope.Add(scope);
             }

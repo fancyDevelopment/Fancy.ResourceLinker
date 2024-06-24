@@ -20,7 +20,7 @@ Extend your `Gateway` configuration section with an `Authentication` section and
     "Authentication": {  // <-- Add this section and configure it with your values
         "Authority": "<Your Authority URL>",
         "ClientId": "<Your Client ID>",
-        "AuthorizationCodeScopes": "<Your Scopes to Request>",
+        "Scopes": "<Your Scopes to Request>",
         "SessionTimeoutInMin": 30,
         "UniqueIdentifierClaimType": "<A Claim in the Token which Uniquely Identifes the User>"
     }
@@ -131,7 +131,7 @@ In the standard client credential auth strategy we provide the gateway with the 
             "Microservice1": {
                 "BaseUrl": "http://localhost:5000",
                 "Authentication": {
-                    "Strategy": "ClientCredentialOnly",
+                    "Strategy": "ClientCredentials",
                     "Options": {
                         "Authority": "<Your Authority URL>",
                         "ClientId": "<Your Client ID>",
@@ -157,7 +157,7 @@ In case you would like to use the client credential auth strategy with Auth0 as 
             "Microservice1": {
                 "BaseUrl": "http://localhost:5000",
                 "Authentication": {
-                    "Strategy": "Auth0ClientCredentialOnly",
+                    "Strategy": "Auth0ClientCredentials",
                     "Options": {
                         "Authority": "<Your Authority URL>",
                         "ClientId": "<Your Client ID>",

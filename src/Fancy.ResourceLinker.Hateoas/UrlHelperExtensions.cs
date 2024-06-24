@@ -128,14 +128,14 @@ public static class UrlHelperExtensions
         string baseUrl;
         if (urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("X-Forwarded-Host"))
         {
-            baseUrl = urlHelper.ActionContext.HttpContext.Request.Headers["X-Forwarded-Host"];
+            baseUrl = urlHelper.ActionContext.HttpContext.Request.Headers["X-Forwarded-Host"]!;
         }
         else
         {
             string scheme = urlHelper.ActionContext.HttpContext.Request.Scheme;
             if (urlHelper.ActionContext.HttpContext.Request.Headers.ContainsKey("X-Forwarded-Proto"))
             {
-                scheme = urlHelper.ActionContext.HttpContext.Request.Headers["X-Forwarded-Proto"];
+                scheme = urlHelper.ActionContext.HttpContext.Request.Headers["X-Forwarded-Proto"]!;
             }
 
             baseUrl = scheme + "://" + urlHelper.ActionContext.HttpContext.Request.Host.Value;

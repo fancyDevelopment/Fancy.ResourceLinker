@@ -43,14 +43,14 @@ class ClientCredentialsTokenResponse
 }
 
 /// <summary>
-/// A route authentication strategy running the OAuth client credential flow only. 
+/// A route authentication strategy running the client credential flow. 
 /// </summary>
-internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
+internal class ClientCredentialsAuthStrategy : IRouteAuthenticationStrategy
 {
     /// <summary>
     /// The name of the auth strategy.
     /// </summary>
-    public const string NAME = "ClientCredentialsOnly";
+    public const string NAME = "ClientCredentials";
 
     /// <summary>
     /// The discovery document service.
@@ -60,7 +60,7 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     /// <summary>
     /// The logger.
     /// </summary>
-    private readonly ILogger<ClientCredentialOnlyAuthStrategy> _logger;
+    private readonly ILogger<ClientCredentialsAuthStrategy> _logger;
 
     /// <summary>
     /// The discovery document.
@@ -93,11 +93,11 @@ internal class ClientCredentialOnlyAuthStrategy : IRouteAuthenticationStrategy
     protected ClientCredentialsTokenResponse? _currentTokenResponse;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ClientCredentialOnlyAuthStrategy" /> class.
+    /// Initializes a new instance of the <see cref="ClientCredentialsAuthStrategy" /> class.
     /// </summary>
     /// <param name="discoveryDocumentService">The discovery document service.</param>
     /// <param name="logger">The logger.</param>
-    public ClientCredentialOnlyAuthStrategy(DiscoveryDocumentService discoveryDocumentService, ILogger<ClientCredentialOnlyAuthStrategy> logger)
+    public ClientCredentialsAuthStrategy(DiscoveryDocumentService discoveryDocumentService, ILogger<ClientCredentialsAuthStrategy> logger)
     {
         _discoveryDocumentService = discoveryDocumentService;
         _logger = logger;

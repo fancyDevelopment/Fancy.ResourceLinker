@@ -43,15 +43,7 @@ public class GatewayAuthenticationSettings
     /// <value>
     /// The authorization code scopes.
     /// </value>
-    public string AuthorizationCodeScopes { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the scopes to request during an client credentials flow.
-    /// </summary>
-    /// <value>
-    /// The client credentials scopes.
-    /// </value>
-    public string ClientCredentialsScopes { get; set; } = string.Empty;
+    public string Scopes { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the type of the unique identifier claim.
@@ -116,7 +108,7 @@ public class CookieSettings
     /// true || Not set == Strict
     /// false == Lax
     /// </value>
-    public bool SameSiteStrict { get; set; } = true;
+    public bool SameSiteStrict { get; set; } = false;
     ///                   
     /// <summary>
     /// Gets or sets the secure flag.
