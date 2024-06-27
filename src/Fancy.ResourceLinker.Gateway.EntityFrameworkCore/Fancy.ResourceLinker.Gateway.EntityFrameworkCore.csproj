@@ -12,7 +12,7 @@
     <Title>Fancy Resource Linker Gateway</Title>
     <Description>Extends the Fancy.ResourceLinker.Gateway package with features to save shared resources for all instances to database.</Description>
     <Authors>fancy Development - Daniel Murrmann</Authors>
-    <Copyright>Copyright 2015-2023 fancyDevelopment - Daniel Murrmann</Copyright>
+    <Copyright>Copyright 2015-2024 fancyDevelopment - Daniel Murrmann</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/fancyDevelopment/Fancy.ResourceLinker</PackageProjectUrl>
   </PropertyGroup>

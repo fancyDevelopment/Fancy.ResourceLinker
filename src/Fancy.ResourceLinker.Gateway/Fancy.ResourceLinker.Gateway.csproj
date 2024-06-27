@@ -12,7 +12,7 @@
     <Title>Fancy Resource Linker Gateway</Title>
     <Description>A library to create API Gateways with dynamic data structures on top of ASP.NET Core.</Description>
     <Authors>fancy Development - Daniel Murrmann</Authors>
-    <Copyright>Copyright 2015-2023 fancyDevelopment - Daniel Murrmann</Copyright>
+    <Copyright>Copyright 2015-2024 fancyDevelopment - Daniel Murrmann</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/fancyDevelopment/Fancy.ResourceLinker</PackageProjectUrl>
   </PropertyGroup>

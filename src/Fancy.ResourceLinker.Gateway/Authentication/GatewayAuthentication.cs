@@ -168,8 +168,7 @@ internal sealed class GatewayAuthentication
     {
         // Add the default asp.net core middlewares for authentication and authorization
         app.UseAuthentication();
-        app.UseAuthorization();
-
+        
         // Custom Middleware to read current user into token service
         app.Use(async (context, next) =>
         {
@@ -202,5 +201,7 @@ internal sealed class GatewayAuthentication
             }
             
         });
+
+        app.UseAuthorization();
     }
 }
