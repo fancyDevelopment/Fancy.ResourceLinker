@@ -112,9 +112,9 @@ With this basic set up you can make calls to your microservices easily and chang
 
 To learn how each single feature can be realized have a look to the following individual guidelines.
 
-* Aggregating data from differend sources into a client optimized model - Comming Soon
-* Provide different apis and/or resources under the same origin - Comming Soon
-* Create truly RESTful services - Comming Soon
+* Aggregating data from differend sources into a client optimized model - Documentation Comming Soon
+* Provide different apis and/or resources under the same origin - Documentation Comming Soon
+* Create truly RESTful services - Documentation Comming Soon
 * [Let the gateway act as authentication facade](./doc/features/authentication.md)
 
 

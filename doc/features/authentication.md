@@ -21,6 +21,7 @@ Extend your `Gateway` configuration section with an `Authentication` section and
         "Authority": "<Your Authority URL>",
         "ClientId": "<Your Client ID>",
         "Scopes": "<Your Scopes to Request>",
+        "ClientSecret": "<In case of a Confidential Client - your Client Secret>",
         "SessionTimeoutInMin": 30,
         "UniqueIdentifierClaimType": "<A Claim in the Token which Uniquely Identifes the User>"
     }
