@@ -153,7 +153,7 @@ public abstract class ResourceBase : IResource
             }
             else
             {
-                throw new KeyNotFoundException($"Key {key} does not exist on this instance.");
+                throw new KeyNotFoundException($"Key {key} does not exist on this statically typed resource. If you want to work with dynamic data structures use 'DynamicResourceBase'.");
             }
         }
         set
@@ -164,7 +164,7 @@ public abstract class ResourceBase : IResource
             }
             else
             {
-                throw new KeyNotFoundException($"Key {key} does not exist on this instance.");
+                throw new KeyNotFoundException($"Key {key} does not exist on this statically typed resource. If you want to work with dynamic data structures use 'DynamicResourceBase'.");
             }
         }
     }
