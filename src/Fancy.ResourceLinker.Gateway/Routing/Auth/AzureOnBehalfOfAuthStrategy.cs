@@ -1,4 +1,5 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
+﻿using System.Collections.Concurrent;
+using Fancy.ResourceLinker.Gateway.Authentication;
 using Fancy.ResourceLinker.Gateway.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,9 +94,10 @@ internal class AzureOnBehalfOfAuthStrategy : IRouteAuthenticationStrategy
     private DiscoveryDocument? _discoveryDocument;
 
     /// <summary>
-    /// The current token response.
+    /// The currently in-use token responses per SessionId.
     /// </summary>
-    private OnBehalfOfTokenResponse? _currentTokenResponse;
+    // private ConcurrentDictionary<string, OnBehalfOfTokenResponse?> _cachedTokenResponses;
+    private ConcurrentDictionary<string, OnBehalfOfTokenResponse?> _cachedTokenResponses = new ();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AzureOnBehalfOfAuthStrategy"/> class.
@@ -165,26 +167,31 @@ internal class AzureOnBehalfOfAuthStrategy : IRouteAuthenticationStrategy
         string accessToken = await GetAccessTokenAsync(serviceProvider);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
     }
-
+    
     /// <summary>
     /// Gets the access token asynchronous.
     /// </summary>
     /// <returns>The access token.</returns>
     private async Task<string> GetAccessTokenAsync(IServiceProvider serviceProvider)
     {
-        if (_currentTokenResponse == null || IsExpired(_currentTokenResponse))
+        var tokenService = TryGetTokenService(serviceProvider);
+        
+        if (tokenService == null)
         {
-            TokenService? tokenService = TryGetTokenService(serviceProvider);
-
-            if (tokenService == null)
-            {
-                throw new InvalidOperationException("A token service in a scope is needed to use the azure on behalf of flow");
-            }
-
-            _currentTokenResponse = await GetOnBehalfOfTokenAsync(tokenService);
+            throw new InvalidOperationException("A token service in a scope is needed to use the azure on behalf of flow");
         }
 
-        return _currentTokenResponse.AccessToken;
+        var tokenResponse = _cachedTokenResponses.ContainsKey(tokenService.CurrentSessionId!)
+            ? _cachedTokenResponses[tokenService.CurrentSessionId!]
+            : null;
+
+        if (tokenResponse == null || IsExpired(tokenResponse))
+        {
+            tokenResponse = await GetOnBehalfOfTokenAsync(tokenService);
+            _cachedTokenResponses.TryAdd(tokenService.CurrentSessionId!, tokenResponse);
+        }
+
+        return tokenResponse.AccessToken;
     }
 
     /// <summary>
