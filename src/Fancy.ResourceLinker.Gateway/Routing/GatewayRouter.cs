@@ -2,7 +2,6 @@
 using Fancy.ResourceLinker.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -104,6 +103,22 @@ public class GatewayRouter
     }
 
     /// <summary>
+    /// Sets the proxy headers to the request.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    private void SetProxyHeaders(HttpRequestMessage request)
+    {
+        if (_settings.ResourceProxy != null)
+        {
+            string[] proxyParts = _settings.ResourceProxy.Split("://");
+            string proto = proxyParts[0];
+            string host = proxyParts[1];
+            request.Headers.Add("X-Forwarded-Proto", proto);
+            request.Headers.Add("X-Forwarded-Host", host);
+        }
+    }
+
+    /// <summary>
     /// Sends a request and deserializes the response into a given type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
@@ -112,8 +127,8 @@ public class GatewayRouter
     /// <returns>The result deserialized into the specified resource type.</returns>
     private async Task<TResource?> SendAsync<TResource>(HttpRequestMessage request, string routeName) where TResource : class
     {
-        if (_settings.ResourceProxy != null) request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
- 
+        SetProxyHeaders(request);
+
         // Set authentication to request
         IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
         await authStrategy.SetAuthenticationAsync(_serviceProvider, request);
@@ -138,10 +153,7 @@ public class GatewayRouter
     /// <param name="routeName">The name of the route to use.</param>
     private async Task SendAsync(HttpRequestMessage request, string routeName)
     {
-        if (_settings.ResourceProxy != null)
-        {
-            request.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
-        }
+        SetProxyHeaders(request);
 
         // Set authentication to request
         IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
