@@ -15,6 +15,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker.Models
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fancy.ResourceLinker.Models.UTest", "src\Fancy.ResourceLinker.Models.UTest\Fancy.ResourceLinker.Models.UTest.csproj", "{04A89FBF-5902-4A4E-964D-16CE1828F034}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHub", "GitHub", "{C8679203-B59A-4A3B-B60C-EC92677D5939}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\Fancy.ResourceLinker.Gateway.EntityFrameworkCore.yaml = .github\workflows\Fancy.ResourceLinker.Gateway.EntityFrameworkCore.yaml
+		.github\workflows\Fancy.ResourceLinker.Gateway.yaml = .github\workflows\Fancy.ResourceLinker.Gateway.yaml
+		.github\workflows\Fancy.ResourceLinker.Hateoas.yaml = .github\workflows\Fancy.ResourceLinker.Hateoas.yaml
+		.github\workflows\Fancy.ResourceLinker.Models.yaml = .github\workflows\Fancy.ResourceLinker.Models.yaml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
