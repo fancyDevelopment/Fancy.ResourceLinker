@@ -30,6 +30,59 @@ internal class DbTokenStore : ITokenStore
     }
 
     /// <summary>
+    /// Saves or update tokens asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="idToken">The identifier token.</param>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="refreshToken">The refresh token.</param>
+    /// <param name="expiresAt">The expires at.</param>
+    public async Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt)
+    {
+        TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
+
+        if (tokenSet == null)
+        {
+            tokenSet = new TokenSet(sessionId, idToken, accessToken, refreshToken, expiresAt);
+            _dbContext.TokenSets.Add(tokenSet);
+        }
+        else
+        {
+            tokenSet.IdToken = idToken;
+            tokenSet.AccessToken = accessToken;
+            tokenSet.RefreshToken = refreshToken;
+            tokenSet.ExpiresAt = expiresAt;
+        }
+
+        _cachedTokens[sessionId] = tokenSet;
+        await _dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Saves the or update userinfo claims asynchronous.
+    /// </summary>
+    /// <param name="sessionId">The session identifier.</param>
+    /// <param name="userinfoClaims">The userinfo object as json string.</param>
+    /// <returns>
+    /// A task indicating the completion of the asynchronous operation.
+    /// </returns>
+    public async Task SaveOrUpdateUserinfoClaimsAsync(string sessionId, string userinfoClaims)
+    {
+        TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
+
+        if (tokenSet == null)
+        {
+            throw new InvalidOperationException("The specified session Id is not valid");
+        }
+        else
+        {
+            tokenSet.UserinfoClaims = userinfoClaims;
+        }
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// Gets the token record for a provided session asynchronous.
     /// </summary>
     /// <param name="sessionId">The session identifier.</param>
@@ -59,35 +112,6 @@ internal class DbTokenStore : ITokenStore
         if (tokenSet == null) { return Task.FromResult<TokenRecord?>(null); }
 
         return Task.FromResult<TokenRecord?>(new TokenRecord(sessionId, tokenSet.IdToken, tokenSet.AccessToken, tokenSet.RefreshToken, tokenSet.ExpiresAt));
-    }
-
-    /// <summary>
-    /// Saves or update tokens asynchronous.
-    /// </summary>
-    /// <param name="sessionId">The session identifier.</param>
-    /// <param name="idToken">The identifier token.</param>
-    /// <param name="accessToken">The access token.</param>
-    /// <param name="refreshToken">The refresh token.</param>
-    /// <param name="expiresAt">The expires at.</param>
-    public async Task SaveOrUpdateTokensAsync(string sessionId, string idToken, string accessToken, string refreshToken, DateTime expiresAt)
-    {
-        TokenSet? tokenSet = await _dbContext.TokenSets.SingleOrDefaultAsync(ts => ts.SessionId == sessionId);
-
-        if (tokenSet == null)
-        {
-            tokenSet = new TokenSet(sessionId, idToken, accessToken, refreshToken, expiresAt);
-            _dbContext.TokenSets.Add(tokenSet);
-        }
-        else
-        {
-            tokenSet.IdToken = idToken;
-            tokenSet.AccessToken = accessToken;
-            tokenSet.RefreshToken = refreshToken;
-            tokenSet.ExpiresAt = expiresAt;
-        }
-
-        _cachedTokens[sessionId] = tokenSet;
-        await _dbContext.SaveChangesAsync();
     }
 
     /// <summary>

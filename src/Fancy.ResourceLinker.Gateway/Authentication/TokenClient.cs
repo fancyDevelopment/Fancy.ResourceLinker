@@ -91,6 +91,11 @@ public class TokenClient
     private DiscoveryDocument? _discoveryDocument;
 
     /// <summary>
+    /// The HTTP client.
+    /// </summary>
+    private HttpClient _httpClient = new HttpClient();
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="TokenClient"/> class.
     /// </summary>
     /// <param name="settings">The authentication settings.</param>
@@ -118,8 +123,6 @@ public class TokenClient
             { "client_secret", _settings.ClientSecret }
         };
 
-        HttpClient httpClient = new HttpClient();
-
         HttpRequestMessage request = new HttpRequestMessage
         {
             RequestUri = new Uri(discoveryDocument.TokenEndpoint),
@@ -127,7 +130,7 @@ public class TokenClient
             Content = new FormUrlEncodedContent(payload)
         };
 
-        HttpResponseMessage response = await httpClient.SendAsync(request);
+        HttpResponseMessage response = await _httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -135,6 +138,29 @@ public class TokenClient
         }
 
         return await response.Content.ReadFromJsonAsync<TokenRefreshResponse>();
+    }
+
+    /// <summary>
+    /// Queries the user information endpoint.
+    /// </summary>
+    /// <param name="accessToken">The access token.</param>
+    /// <returns>The json object delivered by the userinfo endpoint.</returns>
+    public async Task<string> QueryUserInfoEndpoint(string accessToken)
+    {
+        DiscoveryDocument discoveryDocument = await GetDiscoveryDocumentAsync();
+
+        HttpRequestMessage request = new HttpRequestMessage
+        {
+            RequestUri = new Uri(discoveryDocument.UserinfoEndpoint),
+            Method = HttpMethod.Get,
+            Headers = { { "Authorization", $"Bearer {accessToken}" } }
+        };
+
+        HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsStringAsync();
     }
 
     /// <summary>

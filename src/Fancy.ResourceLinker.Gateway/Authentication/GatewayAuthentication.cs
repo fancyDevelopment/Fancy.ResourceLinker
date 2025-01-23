@@ -74,7 +74,7 @@ internal sealed class GatewayAuthentication
             options.ClientSecret = string.IsNullOrWhiteSpace(settings.ClientSecret) ? null : settings.ClientSecret;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.SaveTokens = false;
-            options.GetClaimsFromUserInfoEndpoint = settings.QueryUserInfoEndpoint;
+            options.GetClaimsFromUserInfoEndpoint = false;
             options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
             options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
             options.RequireHttpsMetadata = false;
@@ -125,7 +125,7 @@ internal sealed class GatewayAuthentication
                     }
 
                     // Setup a new default identity which only contians the token session id
-                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { sessionIdClaim, uniqueNameClaim }, context.Principal?.Identity?.AuthenticationType, settings.UniqueIdentifierClaimType, null));
+                    context.Principal = new ClaimsPrincipal(new ClaimsIdentity([sessionIdClaim, uniqueNameClaim], context.Principal?.Identity?.AuthenticationType, settings.UniqueIdentifierClaimType, null));
                 }
 
                 return Task.CompletedTask;
@@ -166,7 +166,7 @@ internal sealed class GatewayAuthentication
     /// <param name="webApp">The web application.</param>
     internal static void UseGatewayAuthentication(WebApplication app)
     {
-        // Add the default asp.net core middlewares for authentication and authorization
+        // Add the default asp.net core middlewares for authentication
         app.UseAuthentication();
         
         // Custom Middleware to read current user into token service
@@ -183,7 +183,14 @@ internal sealed class GatewayAuthentication
                     tokenService.CurrentSessionId = currentSessionId;
 
                     // Add the identity from the current valid token
-                    context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetAccessTokenClaimsAsync(), "Gateway", _settings.UniqueIdentifierClaimType, "roles"));
+                    context.User.AddIdentity(new ClaimsIdentity(await tokenService.GetAccessTokenClaimsAsync(), "AccessToken", _settings.UniqueIdentifierClaimType, "roles"));
+
+                    IEnumerable<Claim>? userinfoClaims = await tokenService.GetUserinfoClaimsAsync();
+
+                    if(userinfoClaims != null)
+                    {
+                        context.User.AddIdentity(new ClaimsIdentity(userinfoClaims, "UserinfoEndpoint"));
+                    }
                 }
 
                 await next(context);
@@ -202,6 +209,7 @@ internal sealed class GatewayAuthentication
             
         });
 
+        // Add the default asp.net core middlewares for authorization
         app.UseAuthorization();
     }
 }

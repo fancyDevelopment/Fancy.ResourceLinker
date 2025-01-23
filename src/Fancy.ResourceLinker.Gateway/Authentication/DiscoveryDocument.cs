@@ -15,4 +15,13 @@ public class DiscoveryDocument
     /// </value>
     [JsonPropertyName("token_endpoint")]
     public string TokenEndpoint { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the userinfo endpoint.
+    /// </summary>
+    /// <value>
+    /// The userinfo endpoint.
+    /// </value>
+    [JsonPropertyName("userinfo_endpoint")]
+    public string UserinfoEndpoint { get; set; } = "";
 }
