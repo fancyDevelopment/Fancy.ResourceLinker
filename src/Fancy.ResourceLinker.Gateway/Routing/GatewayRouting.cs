@@ -25,6 +25,7 @@ internal static class GatewayRouting
         // Set up routing authentication subsystem
         services.AddSingleton<RouteAuthenticationManager>();
         services.AddKeyedTransient<IRouteAuthenticationStrategy, NoAuthenticationAuthStrategy>(NoAuthenticationAuthStrategy.NAME);
+        services.AddKeyedTransient<IRouteAuthenticationStrategy, EnsureAuthenticatedAuthStrategy>(EnsureAuthenticatedAuthStrategy.NAME);
         services.AddKeyedTransient<IRouteAuthenticationStrategy, TokenPassThroughAuthStrategy>(TokenPassThroughAuthStrategy.NAME);
         services.AddKeyedTransient<IRouteAuthenticationStrategy, AzureOnBehalfOfAuthStrategy>(AzureOnBehalfOfAuthStrategy.NAME);
         services.AddKeyedTransient<IRouteAuthenticationStrategy, ClientCredentialsAuthStrategy>(ClientCredentialsAuthStrategy.NAME);

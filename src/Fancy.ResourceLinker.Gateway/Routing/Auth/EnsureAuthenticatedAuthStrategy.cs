@@ -1,20 +1,18 @@
 ﻿using Fancy.ResourceLinker.Gateway.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
-using System.Net.Http.Headers;
 
 namespace Fancy.ResourceLinker.Gateway.Routing.Auth;
 
 /// <summary>
-/// An auth strategy which just passes through the current token
+/// An auth strategy which makes sure that the current call is authenticated but does not set auth infos to requests.
 /// </summary>
-internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
+internal class EnsureAuthenticatedAuthStrategy : IRouteAuthenticationStrategy
 {
     /// <summary>
     /// The name of the auth strategy.
     /// </summary>
-    public const string NAME = "TokenPassThrough";
+    public const string NAME = "EnsureAuthenticated";
 
     /// <summary>
     /// Gets the name of the strategy.
@@ -42,11 +40,9 @@ internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
     /// <returns>
     /// A task indicating the completion of the asynchronous operation
     /// </returns>
-    public async Task SetAuthenticationAsync(HttpContext context)
+    public Task SetAuthenticationAsync(HttpContext context)
     {
-        TokenService tokenService = GetTokenService(context.RequestServices);
-        string accessToken = await tokenService.GetAccessTokenAsync();
-        context.Request.Headers.Authorization = new StringValues("Bearer " + accessToken);
+        return EnsureAccessTokenExistsAsync(context.RequestServices);
     }
 
     /// <summary>
@@ -57,11 +53,25 @@ internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
     /// <returns>
     /// A task indicating the completion of the asynchronous operation
     /// </returns>
-    public async Task SetAuthenticationAsync(IServiceProvider serviceProvider, HttpRequestMessage request)
+    public Task SetAuthenticationAsync(IServiceProvider serviceProvider, HttpRequestMessage request)
     {
-        TokenService? tokenService = GetTokenService(serviceProvider);
+        return EnsureAccessTokenExistsAsync(serviceProvider);
+    }
+
+    /// <summary>
+    /// Ensures the access token exists asynchronous.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider.</param>
+    /// <exception cref="System.InvalidOperationException">No access token is available</exception>
+    private async Task EnsureAccessTokenExistsAsync(IServiceProvider serviceProvider)
+    {
+        TokenService tokenService = GetTokenService(serviceProvider);
         string accessToken = await tokenService.GetAccessTokenAsync();
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            throw new InvalidOperationException("No access token is available");
+        }
     }
 
     /// <summary>
@@ -77,7 +87,7 @@ internal class TokenPassThroughAuthStrategy : IRouteAuthenticationStrategy
         }
         catch (InvalidOperationException)
         {
-            throw new InvalidOperationException("A token service in a scope is needed to use the token pass through auth strategy");
+            throw new InvalidOperationException("A token service in a scope is needed to use the ensure authenticated auth strategy");
         }
     }
 }

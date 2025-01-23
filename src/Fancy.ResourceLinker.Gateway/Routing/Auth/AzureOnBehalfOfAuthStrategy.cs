@@ -174,12 +174,7 @@ internal class AzureOnBehalfOfAuthStrategy : IRouteAuthenticationStrategy
     /// <returns>The access token.</returns>
     private async Task<string> GetAccessTokenAsync(IServiceProvider serviceProvider)
     {
-        var tokenService = TryGetTokenService(serviceProvider);
-        
-        if (tokenService == null)
-        {
-            throw new InvalidOperationException("A token service in a scope is needed to use the azure on behalf of flow");
-        }
+        TokenService tokenService = GetTokenService(serviceProvider);
 
         var tokenResponse = _cachedTokenResponses.ContainsKey(tokenService.CurrentSessionId!)
             ? _cachedTokenResponses[tokenService.CurrentSessionId!]
@@ -245,20 +240,19 @@ internal class AzureOnBehalfOfAuthStrategy : IRouteAuthenticationStrategy
     }
 
     /// <summary>
-    /// Tries to get the token service.
+    /// Get the token service.
     /// </summary>
     /// <param name="serviceProvider">The service provider.</param>
-    /// <returns>An instance of the current token service or null if no token service is availalbe.</returns>
-    private TokenService? TryGetTokenService(IServiceProvider serviceProvider)
+    /// <returns>An instance of the current token service.</returns>
+    private TokenService GetTokenService(IServiceProvider serviceProvider)
     {
         try
         {
-            return serviceProvider.GetService<TokenService>();
+            return serviceProvider.GetRequiredService<TokenService>();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException e)
         {
-            // No token service available
-            return null;
+            throw new InvalidOperationException("A token service in a scope is needed to use the azure on behalf of flow", e);
         }
     }
 
