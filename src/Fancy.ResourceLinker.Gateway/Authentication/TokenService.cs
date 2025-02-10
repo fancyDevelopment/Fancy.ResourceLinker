@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Fancy.ResourceLinker.Gateway.Authentication;
 
@@ -33,16 +34,26 @@ public class TokenService
     private readonly IWebHostEnvironment _environment;
 
     /// <summary>
+    /// The authentication settings.
+    /// </summary>
+    private readonly GatewayAuthenticationSettings _settings;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="TokenService"/> class.
     /// </summary>
     /// <param name="tokenStore">The token store.</param>
     /// <param name="tokenClient">The token client.</param>
-    public TokenService(ITokenStore tokenStore, TokenClient tokenClient, ILogger<TokenService> logger, IWebHostEnvironment environment) 
+    public TokenService(ITokenStore tokenStore, 
+                        TokenClient tokenClient, 
+                        ILogger<TokenService> logger, 
+                        IWebHostEnvironment environment, 
+                        GatewayAuthenticationSettings settings) 
     {
         _tokenStore = tokenStore;
         _tokenClient = tokenClient;
         _logger = logger;
         _environment = environment;
+        _settings = settings;
     }
 
     /// <summary>
@@ -65,6 +76,13 @@ public class TokenService
         // Create a new guid for the new session
         string sessionId = Guid.NewGuid().ToString();
         await SaveOrUpdateTokenAsync(sessionId, tokenResponse);
+
+        if(_settings.QueryUserInfoEndpoint)
+        {
+            string userinfoClaims = await _tokenClient.QueryUserInfoEndpoint(tokenResponse.AccessToken);
+            await _tokenStore.SaveOrUpdateUserinfoClaimsAsync(sessionId, userinfoClaims);
+        }
+
         return sessionId;
     }
 
@@ -135,7 +153,7 @@ public class TokenService
     /// Gets the access token claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
-    public async Task<IEnumerable<Claim>?> GetAccessTokenClaimsAsync()
+    public async Task<IEnumerable<Claim>> GetAccessTokenClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 
@@ -155,7 +173,7 @@ public class TokenService
     /// Gets the identity claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
-    public async Task<IEnumerable<Claim>?> GetIdentityClaimsAsync()
+    public async Task<IEnumerable<Claim>> GetIdentityClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 
@@ -169,6 +187,24 @@ public class TokenService
         JwtSecurityToken idToken = new JwtSecurityTokenHandler().ReadJwtToken(tokenRecord.IdToken);
 
         return idToken.Claims;
+    }
+
+    public async Task<IEnumerable<Claim>?> GetUserinfoClaimsAsync()
+    {
+        TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);
+
+        if (tokenRecord == null)
+        {
+            throw new NoTokenForCurrentSessionIdException();
+        }
+
+        if(tokenRecord.UserinfoClaims == null)
+        {
+            return null;
+        }
+
+        Dictionary<string, JsonElement>? userinfos = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(tokenRecord.UserinfoClaims);
+        return userinfos?.Select(userinfo => new Claim(userinfo.Key, userinfo.Value.ToString())).ToList();
     }
 
     /// <summary>

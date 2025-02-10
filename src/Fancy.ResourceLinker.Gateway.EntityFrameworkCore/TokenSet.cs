@@ -59,6 +59,14 @@ public class TokenSet
     public string RefreshToken { get; set; }
 
     /// <summary>
+    /// Gets or sets the userinfo claims.
+    /// </summary>
+    /// <value>
+    /// The userinfo claims.
+    /// </value>
+    public string? UserinfoClaims { get; set; }
+
+    /// <summary>
     /// Gets or sets the expires at.
     /// </summary>
     /// <value>
