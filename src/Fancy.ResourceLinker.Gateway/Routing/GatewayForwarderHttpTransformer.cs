@@ -37,13 +37,8 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
             await authStrategy.SetAuthenticationAsync(httpContext.RequestServices, proxyRequest);
         }
 
-        if(httpContext.Items.ContainsKey(TargetUrlItemKey))
-        {
-            // If an alternative target url ist provided use it
-            string? targetUrl = Convert.ToString(httpContext.Items[TargetUrlItemKey]);
-            if(targetUrl != null) proxyRequest.RequestUri = new Uri(targetUrl);
-        }
-        
+        proxyRequest.RequestUri = new Uri(destinationPrefix);
+
         // Suppress the original request header, use the one from the destination Uri.
         proxyRequest.Headers.Host = null;
     }

@@ -153,7 +153,7 @@ public class TokenService
     /// Gets the access token claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
-    public async Task<IEnumerable<Claim>> GetAccessTokenClaimsAsync()
+    public async Task<IEnumerable<Claim>?> GetAccessTokenClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 
@@ -173,7 +173,7 @@ public class TokenService
     /// Gets the identity claims of the current session asynchronous.
     /// </summary>
     /// <returns></returns>
-    public async Task<IEnumerable<Claim>> GetIdentityClaimsAsync()
+    public async Task<IEnumerable<Claim>?> GetIdentityClaimsAsync()
     {
         if (CurrentSessionId == null) return null;
 
@@ -191,6 +191,8 @@ public class TokenService
 
     public async Task<IEnumerable<Claim>?> GetUserinfoClaimsAsync()
     {
+        if (CurrentSessionId == null) return null;
+
         TokenRecord? tokenRecord = await _tokenStore.GetTokenRecordAsync(CurrentSessionId);
 
         if (tokenRecord == null)
