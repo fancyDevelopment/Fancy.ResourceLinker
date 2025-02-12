@@ -434,11 +434,10 @@ public class GatewayRouter
         Uri targetUrl = CombineUris(baseUrl, relativurl);
 
         httpContext.Items[GatewayForwarderHttpTransformer.RouteNameItemKey] = routeName;
-        httpContext.Items[GatewayForwarderHttpTransformer.TargetUrlItemKey] = targetUrl.AbsoluteUri;
 
         // Forward request to microservice
         ForwarderError error = await _forwarder.SendAsync(httpContext,
-                                                          routeName, 
+                                                          targetUrl.AbsoluteUri, 
                                                           _forwarderMessageInvoker, 
                                                           _forwarderRequestConfig, 
                                                           _forwarderTransformer);
