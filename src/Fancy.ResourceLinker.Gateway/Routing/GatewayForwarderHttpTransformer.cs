@@ -1,8 +1,7 @@
-﻿using Fancy.ResourceLinker.Gateway.Authentication;
-using Fancy.ResourceLinker.Gateway.Routing.Auth;
+﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
+using Fancy.ResourceLinker.Gateway.Routing.Util;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
@@ -19,17 +18,18 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
     internal static readonly string RouteNameItemKey = "RouteNameItemKey";
 
     /// <summary>
-    /// The target URL item key.
+    /// The resource proxy item key.
     /// </summary>
-    internal static readonly string TargetUrlItemKey = "TargetUrlItemKey";
+    internal static readonly string ResourceProxyItemKey = "ResourceProxyItemKey";
 
     public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest, string destinationPrefix, CancellationToken cancellationToken)
     {
         await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancellationToken);
 
         string? routeName = httpContext.Items[RouteNameItemKey]?.ToString();
+        string? resourceProxy = httpContext.Items[ResourceProxyItemKey]?.ToString();
 
-        if(!string.IsNullOrEmpty(routeName))
+        if (!string.IsNullOrEmpty(routeName))
         {
             // Add authentication
             RouteAuthenticationManager routeAuthenticationManager = httpContext.RequestServices.GetRequiredService<RouteAuthenticationManager>();
@@ -38,6 +38,7 @@ internal class GatewayForwarderHttpTransformer : HttpTransformer
         }
 
         proxyRequest.RequestUri = new Uri(destinationPrefix);
+        proxyRequest.Headers.SetForwardedHeaders(resourceProxy);
 
         // Suppress the original request header, use the one from the destination Uri.
         proxyRequest.Headers.Host = null;
