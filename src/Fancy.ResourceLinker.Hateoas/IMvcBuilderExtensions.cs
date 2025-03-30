@@ -14,16 +14,18 @@ public static class IMvcBuilderExtensions
     /// </summary>
     /// <param name="mvcBuilder">The mvc builder to add the resource linker to.</param>
     /// <param name="assemblies">The assemblies to search for <see cref="ILinkStrategy"/> implementations to use to link resources.</param>
+    /// <param name="ignoreEmptyMetadata">if set to <c>true</c> ignores empty metadata fields in serialized resources.</param>
+    /// <param name="writePrivates">Specifies if fields which starts with '_' shall be read an written from and to resources.</param>
     /// <returns>
     /// The service collection.
     /// </returns>
-    public static IMvcBuilder AddHateoas(this IMvcBuilder mvcBuilder, params Assembly[] assemblies)
+    public static IMvcBuilder AddHateoas(this IMvcBuilder mvcBuilder, Assembly[] assemblies, bool ignoreEmptyMetadata = true, bool writePrivates = true)
     {
         // Add required services
         mvcBuilder.Services.AddTransient(typeof(IResourceLinker), typeof(ResourceLinker));
 
         // Add resource converter
-        mvcBuilder.AddJsonOptions(options => options.JsonSerializerOptions.AddResourceConverter(true, true));
+        mvcBuilder.AddJsonOptions(options => options.JsonSerializerOptions.AddResourceConverter(ignoreEmptyMetadata, writePrivates));
 
         // Find all link strategies in provided assemblies and register them
         foreach (Assembly assembly in assemblies)
@@ -44,13 +46,15 @@ public static class IMvcBuilderExtensions
     /// implementation of <see cref="ILinkStrategy"/> to use to link resources.
     /// </summary>
     /// <param name="mvcBuilder">The mvc builder to add the resource linker to.</param>
+    /// <param name="ignoreEmptyMetadata">if set to <c>true</c> ignores empty metadata fields in serialized resources.</param>
+    /// <param name="writePrivates">Specifies if fields which starts with '_' shall be read an written from and to resources.</param>
     /// <returns>
     /// The service collection.
     /// </returns>
-    public static IMvcBuilder AddHateoas(this IMvcBuilder mvcBuilder)
+    public static IMvcBuilder AddHateoas(this IMvcBuilder mvcBuilder, bool ignoreEmptyMetadata = true, bool writePrivates = true)
     {
         // Get the calling assembly and add the resource linker
         Assembly assembly = Assembly.GetCallingAssembly();
-        return AddHateoas(mvcBuilder, assembly);
+        return AddHateoas(mvcBuilder, [ assembly ], ignoreEmptyMetadata, writePrivates);
     }
 }
