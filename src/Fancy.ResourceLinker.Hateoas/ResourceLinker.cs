@@ -31,11 +31,6 @@ public class ResourceLinker : IResourceLinker
     /// <param name="urlHelper">The URL helper.</param>
     public void AddLinks<TResource>(TResource resource, IUrlHelper urlHelper) where TResource : IResource
     {
-        if (resource == null)
-        {
-            throw new ArgumentNullException(nameof(resource));
-        }
-
         LinkObject(resource, urlHelper);
 
         // Interate through all keys and link child objects which are also resources

@@ -31,7 +31,7 @@ class NonPubCtorTestObject : DynamicResourceBase
 /// Test class to test serialization and deserializsation using the resource converter. 
 /// </summary>
 [TestClass]
-public class DynamicResourceSerializerTests
+public class ResourceConverterTests
 {
     /// <summary>
     /// A complex object used within the tests.
