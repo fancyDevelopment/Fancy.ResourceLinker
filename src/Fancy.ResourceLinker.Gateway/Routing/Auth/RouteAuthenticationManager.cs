@@ -66,8 +66,17 @@ public class RouteAuthenticationManager
     {
         RouteAuthenticationSettings routeAuthSettings = _routingSettings.Routes[route].Authentication;
 
-        IRouteAuthenticationStrategy authStrategy = _serviceProvider.GetRequiredKeyedService<IRouteAuthenticationStrategy>(routeAuthSettings.Strategy);
+        IRouteAuthenticationStrategy authStrategy;
 
+        try
+        {
+            authStrategy = _serviceProvider.GetRequiredKeyedService<IRouteAuthenticationStrategy>(routeAuthSettings.Strategy);
+        }
+        catch(InvalidOperationException e)
+        {
+            throw new InvalidOperationException($"Could not retrieve an IRouteAuthenticationStrategy with strategy name '{routeAuthSettings.Strategy}'", e);
+        }
+        
         await authStrategy.InitializeAsync(_gatewayAuthenticationSettings, routeAuthSettings);
 
         _authStrategyInstances[route] = authStrategy;
