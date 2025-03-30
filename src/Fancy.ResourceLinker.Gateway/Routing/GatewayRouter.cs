@@ -1,5 +1,6 @@
 ﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
 using Fancy.ResourceLinker.Models.Json;
+using Fancy.ResourceLinker.Gateway.Routing.Util;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -103,22 +104,6 @@ public class GatewayRouter
     }
 
     /// <summary>
-    /// Sets the proxy headers to the request.
-    /// </summary>
-    /// <param name="request">The request.</param>
-    private void SetProxyHeaders(HttpRequestMessage request)
-    {
-        if (_settings.ResourceProxy != null)
-        {
-            string[] proxyParts = _settings.ResourceProxy.Split("://");
-            string proto = proxyParts[0];
-            string host = proxyParts[1];
-            request.Headers.Add("X-Forwarded-Proto", proto);
-            request.Headers.Add("X-Forwarded-Host", host);
-        }
-    }
-
-    /// <summary>
     /// Sends a request and deserializes the response into a given type.
     /// </summary>
     /// <typeparam name="TResource">The type of the resource.</typeparam>
@@ -127,7 +112,7 @@ public class GatewayRouter
     /// <returns>The result deserialized into the specified resource type.</returns>
     private async Task<TResource?> SendAsync<TResource>(HttpRequestMessage request, string routeName) where TResource : class
     {
-        SetProxyHeaders(request);
+        request.Headers.SetForwardedHeaders(_settings.ResourceProxy);
 
         // Set authentication to request
         IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
@@ -153,7 +138,7 @@ public class GatewayRouter
     /// <param name="routeName">The name of the route to use.</param>
     private async Task SendAsync(HttpRequestMessage request, string routeName)
     {
-        SetProxyHeaders(request);
+        request.Headers.SetForwardedHeaders(_settings.ResourceProxy);
 
         // Set authentication to request
         IRouteAuthenticationStrategy authStrategy = await _routeAuthManager.GetAuthStrategyAsync(routeName);
@@ -375,12 +360,7 @@ public class GatewayRouter
         }
 
         proxyRequest.Method = new HttpMethod(httpContext.Request.Method);
-
-        if (_settings.ResourceProxy != null)
-        {
-            proxyRequest.Headers.Add("X-Forwarded-Host", _settings.ResourceProxy);
-        }
-
+        proxyRequest.Headers.SetForwardedHeaders(_settings.ResourceProxy);
         proxyRequest.Headers.Add("Accept", httpContext.Request.Headers["Accept"].ToString());
         proxyRequest.Headers.Host = requestUri.Authority;
         proxyRequest.RequestUri = requestUri;
@@ -434,6 +414,7 @@ public class GatewayRouter
         Uri targetUrl = CombineUris(baseUrl, relativurl);
 
         httpContext.Items[GatewayForwarderHttpTransformer.RouteNameItemKey] = routeName;
+        httpContext.Items[GatewayForwarderHttpTransformer.ResourceProxyItemKey] = _settings.ResourceProxy;
 
         // Forward request to microservice
         ForwarderError error = await _forwarder.SendAsync(httpContext,

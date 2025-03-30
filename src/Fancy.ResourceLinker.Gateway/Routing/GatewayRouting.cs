@@ -1,7 +1,9 @@
 ﻿using Fancy.ResourceLinker.Gateway.Routing.Auth;
+using Fancy.ResourceLinker.Gateway.Routing.Util;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Yarp.ReverseProxy.Configuration;
+using Yarp.ReverseProxy.Transforms;
 
 namespace Fancy.ResourceLinker.Gateway.Routing;
 
@@ -66,8 +68,14 @@ internal static class GatewayRouting
                 RouteId = routeSettings.Key,
                 ClusterId = routeSettings.Key,
                 Match = new RouteMatch { Path = routeSettings.Value.PathMatch },
-                Metadata = new Dictionary<string, string> { { "RouteName", routeSettings.Key } }
-            });
+                Metadata = new Dictionary<string, string> { { "RouteName", routeSettings.Key } },
+                Transforms = new List<Dictionary<string, string>>
+                {
+                    // Turn off default forwarded headers to be able to override it with the origin of the
+                    // ResourceProxy from the configuration
+                    new Dictionary<string, string>{ { "X-Forwarded", "Off" } }
+                }
+,            });
 
             clusters.Add(new ClusterConfig
             {
@@ -76,6 +84,9 @@ internal static class GatewayRouting
             });
         }
 
-        reverseProxyBuilder.LoadFromMemory(routes, clusters);
+        reverseProxyBuilder.LoadFromMemory(routes, clusters)
+                           .AddTransforms(builder => 
+                                builder.AddRequestTransform(async context => 
+                                    context.ProxyRequest.Headers.SetForwardedHeaders(settings.ResourceProxy)));
     }
 }
