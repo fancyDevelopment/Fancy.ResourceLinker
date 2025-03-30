@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
+using Fancy.ResourceLinker.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fancy.ResourceLinker.Hateoas;
@@ -45,6 +46,27 @@ public static class UrlHelperExtensions
         if (methodCallExpression == null) throw new ArgumentException("The provided expression needs to be a method call expression", nameof(methodExpression));
 
         return LinkTo(urlHelper, methodCallExpression);
+    }
+
+    /// <summary>
+    /// Creates a ResourceAction object from a controller method expression.
+    /// </summary>
+    /// <typeparam name="TController">The type of the controller.</typeparam>
+    /// <param name="urlHelper">The URL helper.</param>
+    /// <param name="methodExpression">The method expression.</param>
+    public static ResourceAction ActionTo<TController>(this IUrlHelper urlHelper, Expression<Func<TController, Task>> methodExpression) where TController : ControllerBase
+    {
+        if (urlHelper == null) throw new ArgumentNullException(nameof(urlHelper));
+        if (methodExpression == null) throw new ArgumentNullException(nameof(methodExpression));
+
+        var methodCallExpression = methodExpression.Body as MethodCallExpression;
+
+        if (methodCallExpression == null) throw new ArgumentException("The provided expression needs to be a method call expression", nameof(methodExpression));
+
+        string href = LinkTo(urlHelper, methodCallExpression);
+        string verb = GetHttpVerb(methodCallExpression.Method);
+
+        return new ResourceAction(verb, href);
     }
 
     /// <summary>
@@ -115,6 +137,32 @@ public static class UrlHelperExtensions
         object? value = lambda.Compile().DynamicInvoke();
 
         return new Tuple<string, object?>(parameterInfo.Name, value);
+    }
+
+    /// <summary>
+    /// Gets the HTTP verb from the first HTTP verb attribute of a method via reflection.
+    /// </summary>
+    /// <param name="methodInfo">The method information.</param>
+    /// <returns>The HTTP verb as string (GET, POST, PUT, DELETE, PATCH) or null if no verb attribute is found.</returns>
+    private static string GetHttpVerb(MethodInfo methodInfo)
+    {
+        var attribute = methodInfo.GetCustomAttributes()
+            .FirstOrDefault(attr =>
+                attr is HttpGetAttribute ||
+                attr is HttpPostAttribute ||
+                attr is HttpPutAttribute ||
+                attr is HttpDeleteAttribute ||
+                attr is HttpPatchAttribute);
+
+        return attribute switch
+        {
+            HttpGetAttribute => "GET",
+            HttpPostAttribute => "POST",
+            HttpPutAttribute => "PUT",
+            HttpDeleteAttribute => "DELETE",
+            HttpPatchAttribute => "PATCH",
+            _ => throw new ArgumentException($"No HTTP verb attribute found on method {methodInfo.Name}")
+        };
     }
 
     /// <summary>
