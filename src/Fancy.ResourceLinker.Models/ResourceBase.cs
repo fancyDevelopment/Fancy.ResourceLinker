@@ -87,6 +87,16 @@ public abstract class ResourceBase : IResource
     }
 
     /// <summary>
+    /// Adds an action.
+    /// </summary>
+    /// <param name="rel">The relation.</param>
+    /// <param name="action">The resource action to add.</param>
+    public void AddAction(string rel, ResourceAction action)
+    {
+        Actions[rel] = action;
+    }
+
+    /// <summary>
     /// Adds a socket.
     /// </summary>
     /// <param name="rel">The relation.</param>
