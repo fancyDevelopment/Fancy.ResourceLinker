@@ -34,3 +34,9 @@ jobs:
           cd ./src/Fancy.ResourceLinker.Hateoas/
           dotnet build
 
+      # Execute all unit tests
+      - name: Execute unit tests
+        run: |
+          cd ./src/Fancy.ResourceLinker.Hateoas.UTest/
+          dotnet test
+
